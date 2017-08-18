@@ -44,9 +44,9 @@ __PCP_PRAM_BEGIN = 0xF0050000;
 __PCP_PRAM_SIZE = 16K;
 
 
-__USTACK_SIZE = DEFINED (__USTACK_SIZE) ? __USTACK_SIZE : 1K;  /* Section for ustack*/ 
-__ISTACK_SIZE = DEFINED (__ISTACK_SIZE) ? __ISTACK_SIZE : 256;  /* Section for istack*/ 
-__HEAP_SIZE = DEFINED (__HEAP_SIZE) ? __HEAP_SIZE : 4K;  /* Section for heap*/ 
+__USTACK_SIZE = DEFINED (__USTACK_SIZE) ? __USTACK_SIZE : 4K;  /* Section for ustack*/ 
+__ISTACK_SIZE = DEFINED (__ISTACK_SIZE) ? __ISTACK_SIZE : 1K;  /* Section for istack*/ 
+__HEAP_SIZE = DEFINED (__HEAP_SIZE) ? __HEAP_SIZE : 8K;  /* Section for heap*/ 
 __CSA_SIZE = DEFINED (__CSA_SIZE) ? __CSA_SIZE : 16K;  /* Section for CSA*/ 
 
 /**
