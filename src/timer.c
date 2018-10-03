@@ -13,7 +13,7 @@
 
 #include "timer.h"
 
-#define TICK_INTERRUPT  3
+#define TICK_INTERRUPT  4
 
 extern unsigned int get_cpu_frequency(void);
 

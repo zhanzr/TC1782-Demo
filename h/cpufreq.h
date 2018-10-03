@@ -8,9 +8,9 @@
 
 #define VCOBASE_FREQ	400000000U	/* ?? */
 
-/* divider values for 180 MHz */
+/* divider values for 150 MHz */
 #define SYS_CFG_PDIV	 2
-#define SYS_CFG_NDIV	36
+#define SYS_CFG_NDIV	30
 #define SYS_CFG_K1DIV	 2
 #define SYS_CFG_K2DIV	 2
 #define SYS_CFG_FPIDIV	 1

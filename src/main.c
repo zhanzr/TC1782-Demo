@@ -29,7 +29,7 @@ static void my_timer_handler(void)
 {
 	++g_ticks;
 
-	if (0 == g_ticks%(10*SYSTIME_CLOCK))
+	if (0 == g_ticks%(2*SYSTIME_CLOCK))
 	{
 		g_blink_flag = true;
 	}
@@ -37,12 +37,8 @@ static void my_timer_handler(void)
 
 int main(void)
 {
-	unsigned char c;
-	uint32_t lockTick;
-	uint32_t deltaTick;
-	bool testRes;
-
 	_init_uart(BAUDRATE);
+
 	InitLED();
 
 	/* initialise timer at SYSTIME_CLOCK rate */
@@ -53,7 +49,7 @@ int main(void)
 	/* enable global interrupts */
 	_enable();
 
-	printf("Tricore ADC @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
+	printf("Tricore Demo @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
 			get_fpi_frequency(),
 			get_cpu_frequency(),
 			g_ticks,
@@ -67,7 +63,7 @@ int main(void)
 
 		if(g_blink_flag)
 		{
-			printf("Tricore ADC @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
+			printf("Tricore Demo @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
 					get_fpi_frequency(),
 					get_cpu_frequency(),
 					g_ticks,
@@ -75,7 +71,6 @@ int main(void)
 			);
 
 			LEDTOGGLE(0);
-
 			LEDTOGGLE(1);
 			//			LEDTOGGLE(2);
 			//			LEDTOGGLE(3);
