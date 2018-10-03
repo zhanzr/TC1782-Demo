@@ -100,17 +100,10 @@
   </Input>
   <Files>
     <ObjectFile Name="src\cpufreq.o"/>
-    <ObjectFile Name="src\hello.o"/>
     <ObjectFile Name="src\uart_init_poll.o"/>
     <ObjectFile Name="src\uart_poll.o"/>
-    <ObjectFile Name="src\usr_sprintf.o"/>
     <ObjectFile Name="src\timer.o"/>
-    <ObjectFile Name="src\core_list_join.o"/>
-    <ObjectFile Name="src\core_main.o"/>
-    <ObjectFile Name="src\core_matrix.o"/>
-    <ObjectFile Name="src\core_state.o"/>
-    <ObjectFile Name="src\core_util.o"/>
-    <ObjectFile Name="src\tc1782\core_portme.o"/>
+    <ObjectFile Name="src\main.o"/>
   </Files>
   <LocalAliases>
     <Alias Description="Alias for RAM" Name="DATA" Region="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>

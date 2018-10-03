@@ -10,12 +10,6 @@
 
 #include "cpufreq.h"
 
-#ifdef __TC16__
-/* Required for __MTCR, because PCON0 is part of CFSR. */
-#include <machine/intrinsics.h>
-#endif /* __TC16__ */
-
-
 /* prototypes for global functions */
 void set_cpu_frequency(void);
 unsigned int get_cpu_frequency(void);
