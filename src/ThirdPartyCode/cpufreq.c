@@ -1,23 +1,36 @@
 /*====================================================================
 * Project:  Board Support Package (BSP)
-* Function: Determine the frequency the CPU is running at (TC 1.3.1)
+* Developed using:
+* Function: Determine the frequency the CPU is running at (TC1782)
 *
-* Copyright HighTec EDV-Systeme GmbH 1982-2014
+* Copyright HighTec EDV-Systeme GmbH 1982-2010
 *====================================================================*/
 
-#include <stdint.h>
 #include <machine/wdtcon.h>
+#include <tc1782/scu.h>
+#include <tc1782/cpu.h>
 
-#include "cpufreq.h"
+
+#ifndef DEF_FRQ
+#define DEF_FRQ			20000000U	/* TriBoard-TC1782 quartz frequency is 20 MHz */
+#endif /* DEF_FRQ */
+
+#define VCOBASE_FREQ	400000000U	/* ?? */
+
+/* divider values for 150 MHz */
+#define SYS_CFG_PDIV	 2
+#define SYS_CFG_NDIV	30
+#define SYS_CFG_K1DIV	 2
+#define SYS_CFG_K2DIV	 2
+
 
 /* prototypes for global functions */
 void set_cpu_frequency(void);
 unsigned int get_cpu_frequency(void);
 
-/* initialisation flag: prevent multiple initialisation of PLL_CLC */
+/* initialization flag: prevent multiple initialization of PLL_CLC */
 static int freq_init = 0;
 
-volatile uint32_t clock_mode;
 
 /* Set the frequency the CPU is running at */
 
@@ -47,7 +60,7 @@ void set_cpu_frequency(void)
 
 	if (!SCU_PLLSTAT.bits.PWDSTAT)
 	{
-		/* set speed to selected value */
+		/* set speed to 180 MHz with 20MHz Crystal */
 		pllcon0.reg = 0;
 		pllcon1.reg = 0;
 		pllcon0.bits.NDIV  = SYS_CFG_NDIV - 1;
@@ -56,14 +69,12 @@ void set_cpu_frequency(void)
 		pllcon1.bits.K1DIV = SYS_CFG_K1DIV - 1;
 		pllcon0.bits.VCOBYP = 1;
 		pllcon0.bits.CLRFINDIS = 1;
-#ifdef __TC131__
 		pllcon0.bits.PLLPWD = 1;
-#endif
 		pllcon0.bits.RESLD = 1;
 
 		unlock_wdtcon();
 		/* FPI at half CPU speed */
-		SCU_CCUCON0.bits.FPIDIV = SYS_CFG_FPIDIV;
+		SCU_CCUCON0.reg = 1;
 
 		/* force prescaler mode */
 		SCU_PLLCON0.bits.VCOBYP = 1;
@@ -87,6 +98,7 @@ void set_cpu_frequency(void)
 		lock_wdtcon();
 	}
 }
+
 
 /* Determine the frequency the CPU is running at */
 
@@ -130,8 +142,6 @@ unsigned int get_fpi_frequency(void)
 
 		k_div = pllcon1.bits.K1DIV + 1;
 		frequency = DEF_FRQ / k_div;
-
-		clock_mode = 11;
 	}
 	else if (pllstat.bits.FINDIS)
 	{
@@ -140,8 +150,6 @@ unsigned int get_fpi_frequency(void)
 
 		k_div = pllcon1.bits.K2DIV + 1;
 		frequency = VCOBASE_FREQ / k_div;
-
-		clock_mode = 12;
 	}
 	else
 	{
@@ -153,8 +161,6 @@ unsigned int get_fpi_frequency(void)
 		k_div = pllcon1.bits.K2DIV + 1;
 
 		frequency = DEF_FRQ * n_div / (k_div * p_div);
-
-		clock_mode = 13;
 	}
 
 	frequency /= (fpidiv + 1);
@@ -162,28 +168,24 @@ unsigned int get_fpi_frequency(void)
 	return frequency;
 }
 
+/* Determine the frequency the CPU is running at */
+
 unsigned int get_cpu_frequency(void)
 {
 	unsigned int frequency;
 	unsigned int fpidiv;
-
 	SCU_PLLCON0_t_nonv pllcon0;
 	SCU_PLLCON1_t_nonv pllcon1;
 	SCU_PLLSTAT_t_nonv pllstat;
 
 	if (!freq_init)
 	{
-		/* set speed to selected clock frequency */
 		set_cpu_frequency();
 
 #ifdef ENABLE_ICACHE
+		/* enable instruction cache (PMI_CON0) */
 		unlock_wdtcon();
-		/* enable instruction cache */
-#if defined(__TC131__)
 		PMI_CON0.bits.PCBYP = 0;
-#elif defined(__TC16__)
-		__MTCR(PCON0_ADDR, 0);
-#endif /* __TC131__ */
 		lock_wdtcon();
 #endif /* ENABLE_ICACHE */
 	}
@@ -191,6 +193,9 @@ unsigned int get_cpu_frequency(void)
 	pllcon0 = SCU_PLLCON0;
 	pllcon1 = SCU_PLLCON1;
 	pllstat = SCU_PLLSTAT;
+
+	/* read FPI divider value */
+	fpidiv = SCU_CCUCON0.bits.FPIDIV;
 
 	if (pllstat.bits.VCOBYST)
 	{
@@ -219,6 +224,8 @@ unsigned int get_cpu_frequency(void)
 
 		frequency = DEF_FRQ * n_div / (k_div * p_div);
 	}
+
+	frequency /= (fpidiv + 1);
 
 	return frequency;
 }
