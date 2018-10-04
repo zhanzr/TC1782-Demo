@@ -10,27 +10,10 @@
 #include <tc1782/scu.h>
 #include <tc1782/cpu.h>
 
-
-#ifndef DEF_FRQ
-#define DEF_FRQ			20000000U	/* TriBoard-TC1782 quartz frequency is 20 MHz */
-#endif /* DEF_FRQ */
-
-#define VCOBASE_FREQ	400000000U	/* ?? */
-
-/* divider values for 150 MHz */
-#define SYS_CFG_PDIV	 2
-#define SYS_CFG_NDIV	30
-#define SYS_CFG_K1DIV	 2
-#define SYS_CFG_K2DIV	 2
-
-
-/* prototypes for global functions */
-void set_cpu_frequency(void);
-unsigned int get_cpu_frequency(void);
+#include "cpufreq.h"
 
 /* initialization flag: prevent multiple initialization of PLL_CLC */
 static int freq_init = 0;
-
 
 /* Set the frequency the CPU is running at */
 
@@ -74,7 +57,7 @@ void set_cpu_frequency(void)
 
 		unlock_wdtcon();
 		/* FPI at half CPU speed */
-		SCU_CCUCON0.reg = 1;
+		SCU_CCUCON0.bits.FPIDIV = SYS_CFG_FPIDIV;
 
 		/* force prescaler mode */
 		SCU_PLLCON0.bits.VCOBYP = 1;
@@ -194,9 +177,6 @@ unsigned int get_cpu_frequency(void)
 	pllcon1 = SCU_PLLCON1;
 	pllstat = SCU_PLLSTAT;
 
-	/* read FPI divider value */
-	fpidiv = SCU_CCUCON0.bits.FPIDIV;
-
 	if (pllstat.bits.VCOBYST)
 	{
 		/* prescaler mode */
@@ -224,8 +204,6 @@ unsigned int get_cpu_frequency(void)
 
 		frequency = DEF_FRQ * n_div / (k_div * p_div);
 	}
-
-	frequency /= (fpidiv + 1);
 
 	return frequency;
 }

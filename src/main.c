@@ -11,6 +11,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /* Scheduler includes. */
 #include "FreeRTOS.h"
@@ -36,19 +37,14 @@
 #include "InterruptNestTest.h"
 
 #include "led.h"
-
-#define BUFSIZE		512
-
-extern volatile uint32_t clock_mode;
+#include "cpufreq.h"
 
 volatile uint32_t g_ticks;
 volatile bool g_blink_flag;
-
-
-/*-----------------------------------------------------------*/
+/*----------------------------------------------------------*/
 
 /* Constants for the ComTest tasks. */
-#define mainCOM_TEST_BAUD_RATE		( ( unsigned long ) 115200 )
+#define mainCOM_TEST_BAUD_RATE		( ( uint32_t ) 115200 )
 
 #define mainCOM_TEST_LED			( 5 )
 
@@ -143,6 +139,18 @@ static unsigned long ulRegisterTest2Count = 0;
 //	}
 //}
 
+TaskHandle_t StartTask_Handler;
+void start_task(void *pvParameters);
+
+TaskHandle_t LED0Task_Handler;
+void led0_task(void *pvParameters);
+
+TaskHandle_t LED1Task_Handler;
+void led1_task(void *pvParameters);
+
+TaskHandle_t FLOATTask_Handler;
+void print_task(void *pvParameters);
+
 int main(void)
 {
 	_init_uart(mainCOM_TEST_BAUD_RATE);
@@ -171,12 +179,19 @@ int main(void)
 	tasks are only created if mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY is set to
 	0 (at the top of this file).  See the comments at the top of this file for
 	more information. */
-	vStartLEDFlashTasks( mainLED_TASK_PRIORITY );
+//	vStartLEDFlashTasks( mainLED_TASK_PRIORITY );
 
 	/* The following function will only create more tasks and timers if
 	mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY is set to 0 (at the top of this
 	file).  See the comments at the top of this file for more information. */
-	prvOptionallyCreateComprehensveTestApplication();
+//	prvOptionallyCreateComprehensveTestApplication();
+
+	xTaskCreate((TaskFunction_t )start_task,
+	                (const char*    )"start_task",
+	                (uint16_t       )512,
+	                (void*          )NULL,
+	                (UBaseType_t    )tskIDLE_PRIORITY + 1,
+	                (TaskHandle_t*  )&StartTask_Handler);
 
 	/* Now all the tasks have been started - start the scheduler. */
 	vTaskStartScheduler();
@@ -185,7 +200,6 @@ int main(void)
 	execution does reach here, then it is highly probably that the heap size
 	is too small for the idle and/or timer tasks to be created within
 	vTaskStartScheduler(). */
-	for( ;; );
 
 	while(1)
 	{
@@ -194,7 +208,7 @@ int main(void)
 
 		if(g_blink_flag)
 		{
-			printf("Tricore Demo @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
+			printf("Failed. @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
 					get_fpi_frequency(),
 					get_cpu_frequency(),
 					g_ticks,
@@ -215,6 +229,68 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 /*-----------------------------------------------------------*/
+void start_task(void *pvParameters)
+{
+    taskENTER_CRITICAL();
+
+    xTaskCreate((TaskFunction_t )led0_task,
+                (const char*    )"led0_task",
+                (uint16_t       )512,
+                (void*          )NULL,
+                (UBaseType_t    )tskIDLE_PRIORITY + 2,
+                (TaskHandle_t*  )&LED0Task_Handler);
+
+    xTaskCreate((TaskFunction_t )led1_task,
+                (const char*    )"led1_task",
+                (uint16_t       )512,
+                (void*          )NULL,
+                (UBaseType_t    )tskIDLE_PRIORITY + 3,
+                (TaskHandle_t*  )&LED1Task_Handler);
+
+    xTaskCreate((TaskFunction_t )print_task,
+                (const char*    )"print_task",
+                (uint16_t       )512,
+                (void*          )NULL,
+                (UBaseType_t    )tskIDLE_PRIORITY + 4,
+                (TaskHandle_t*  )&FLOATTask_Handler);
+    vTaskDelete(StartTask_Handler);
+    taskEXIT_CRITICAL();
+}
+
+void led0_task(void *pvParameters)
+{
+    while(1)
+    {
+    	vParTestToggleLED(0);
+    	vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
+}
+
+void led1_task(void *pvParameters)
+{
+    while(1)
+    {
+    	vParTestSetLED(1, 0);
+        vTaskDelay(200 / portTICK_PERIOD_MS);
+    	vParTestSetLED(1, 1);
+        vTaskDelay(800 / portTICK_PERIOD_MS);
+    }
+}
+
+void print_task(void *pvParameters)
+{
+	while(1)
+	{
+		printf("FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
+				get_fpi_frequency(),
+				get_cpu_frequency(),
+				xTaskGetTickCount(),
+				__TRICORE_CORE__
+		);
+
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+	}
+}
 
 static void prvCheckTask( void *pvParameters )
 {

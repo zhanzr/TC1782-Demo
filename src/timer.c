@@ -12,10 +12,9 @@
 #include <tc1782/stm.h>
 
 #include "timer.h"
+#include "cpufreq.h"
 
 #define TICK_INTERRUPT  4
-
-extern unsigned int get_cpu_frequency(void);
 
 /* timer reload value (needed for subtick calculation) */
 static unsigned int reload_value = 0;
@@ -50,7 +49,7 @@ void TimerInit(unsigned int hz)
 	unsigned int frequency;
 
 	/* Compute CPU frequency and timer reload value. */
-	frequency = get_cpu_frequency();
+	frequency = get_fpi_frequency();
 	reload_value = frequency / hz;
 
 	/* Install handler for timer interrupt. */
