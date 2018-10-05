@@ -233,16 +233,16 @@ void start_task(void *pvParameters)
 {
     xTaskCreate((TaskFunction_t )led0_task,
                 (const char*    )"led0_task",
-                (uint16_t       )512,
+                (uint16_t       )256,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 2,
                 (TaskHandle_t*  )&g_task0_handler);
 
     xTaskCreate((TaskFunction_t )led1_task,
                 (const char*    )"led1_task",
-                (uint16_t       )512,
+                (uint16_t       )256,
                 (void*          )NULL,
-                (UBaseType_t    )tskIDLE_PRIORITY + 3,
+                (UBaseType_t    )tskIDLE_PRIORITY + 2,
                 (TaskHandle_t*  )&g_task1_handler);
 
     xTaskCreate((TaskFunction_t )print_task,
@@ -260,7 +260,7 @@ void led0_task(void *pvParameters)
     {
     	vParTestToggleLED(0);
 //    	portDISABLE_INTERRUPTS();
-    	vTaskDelay(70 / portTICK_PERIOD_MS);
+    	vTaskDelay(500 / portTICK_PERIOD_MS);
 //    	portENABLE_INTERRUPTS();
     }
 }
@@ -279,8 +279,6 @@ void simple_delay(uint32_t t)
 
 void led1_task(void *pvParameters)
 {
-	uint32_t tmp_num = 0;
-
     while(1)
     {
         vParTestToggleLED(1);
@@ -288,18 +286,6 @@ void led1_task(void *pvParameters)
 //    	simple_delay(500);
 //    	portENABLE_INTERRUPTS();
         vTaskDelay(500 / portTICK_PERIOD_MS);
-        tmp_num ++;
-        if(0==tmp_num%10)
-        {
-            if(0==tmp_num%20)
-            {
-            	vTaskSuspend(g_task0_handler);
-            }
-            else
-            {
-            	vTaskResume(g_task0_handler);
-            }
-        }
     }
 }
 

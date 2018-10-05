@@ -1,6 +1,6 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 5.
+FreeRTOS Example 7.
 
 Content:
-	Suspend and resume task state.
+	Time slice test.
