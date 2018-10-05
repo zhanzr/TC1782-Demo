@@ -10,31 +10,31 @@
     the terms of the GNU General Public License (version 2) as published by the
     Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
 
-    ***************************************************************************
+ ***************************************************************************
     >>!   NOTE: The modification to the GPL is included to allow you to     !<<
     >>!   distribute a combined work that includes FreeRTOS without being   !<<
     >>!   obliged to provide the source code for proprietary components     !<<
     >>!   outside of the FreeRTOS kernel.                                   !<<
-    ***************************************************************************
+ ***************************************************************************
 
     FreeRTOS is distributed in the hope that it will be useful, but WITHOUT ANY
     WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
     FOR A PARTICULAR PURPOSE.  Full license text is available on the following
     link: http://www.freertos.org/a00114.html
 
-    ***************************************************************************
-     *                                                                       *
-     *    FreeRTOS provides completely free yet professionally developed,    *
-     *    robust, strictly quality controlled, supported, and cross          *
-     *    platform software that is more than just the market leader, it     *
-     *    is the industry's de facto standard.                               *
-     *                                                                       *
-     *    Help yourself get started quickly while simultaneously helping     *
-     *    to support the FreeRTOS project by purchasing a FreeRTOS           *
-     *    tutorial book, reference manual, or both:                          *
-     *    http://www.FreeRTOS.org/Documentation                              *
-     *                                                                       *
-    ***************************************************************************
+ ***************************************************************************
+ *                                                                       *
+ *    FreeRTOS provides completely free yet professionally developed,    *
+ *    robust, strictly quality controlled, supported, and cross          *
+ *    platform software that is more than just the market leader, it     *
+ *    is the industry's de facto standard.                               *
+ *                                                                       *
+ *    Help yourself get started quickly while simultaneously helping     *
+ *    to support the FreeRTOS project by purchasing a FreeRTOS           *
+ *    tutorial book, reference manual, or both:                          *
+ *    http://www.FreeRTOS.org/Documentation                              *
+ *                                                                       *
+ ***************************************************************************
 
     http://www.FreeRTOS.org/FAQHelp.html - Having a problem?  Start by reading
     the FAQ page "My application does not run, what could be wrong?".  Have you
@@ -65,7 +65,7 @@
     mission critical applications that require provable dependability.
 
     1 tab == 4 spaces!
-*/
+ */
 
 /*
  * It is intended that the tasks and timers in this file cause interrupts to
@@ -139,17 +139,17 @@ static volatile unsigned long ulHighFrequencyTaskIterations = 0UL;
 
 void vSetupInterruptNestingTest( void )
 {
-unsigned long ulCompareMatchBits;
+	unsigned long ulCompareMatchBits;
 
 	/* Create the semaphore used to communicate between the high frequency
 	interrupt and the task. */
 	vSemaphoreCreateBinary( xHighFrequencyTimerSemaphore );
 	configASSERT( xHighFrequencyTimerSemaphore );
-	
+
 	/* Create the task that pends on the semaphore that is given by the
 	high frequency interrupt. */
 	xTaskCreate( prvHighFrequencyTimerTask, "HFTmr", configMINIMAL_STACK_SIZE, NULL, configMAX_PRIORITIES - 1, NULL );
-	
+
 	/* Setup the interrupt itself.	The STM module clock divider is setup when 
 	the tick interrupt is configured - which is when the scheduler is started - 
 	so there is no need	to do it here.
@@ -159,7 +159,7 @@ unsigned long ulCompareMatchBits;
 	register. */
 	ulCompareMatchBits = ( 0x1fUL - __CLZ( ulCompareMatchValue ) );
 	ulCompareMatchBits <<= 16UL;
-	
+
 	/* Write the values to the relevant SMT registers, without changing other
 	bits. */
 	taskENTER_CRITICAL();
@@ -172,7 +172,7 @@ unsigned long ulCompareMatchBits;
 		{
 			/* Set-up the interrupt. */
 			STM_SRC1.reg = ( configHIGH_FREQUENCY_TIMER_PRIORITY | 0x00005000UL );
-	
+
 			/* Enable the Interrupt. */
 			STM_ISRR.reg &= ~( 0x03UL << 2UL );
 			STM_ISRR.reg |= ( 0x1UL << 2UL );
@@ -191,7 +191,7 @@ unsigned long ulCompareMatchBits;
 
 unsigned long ulInterruptNestingTestGetIterationCount( unsigned long *pulExpectedIncFrequency_ms )
 {
-unsigned long ulReturn;
+	unsigned long ulReturn;
 
 	*pulExpectedIncFrequency_ms = ulSemaphoreGiveRate_ms;
 	portENTER_CRITICAL();
@@ -213,7 +213,7 @@ static void prvHighFrequencyTimerTask( void *pvParameters )
 	{
 		/* Wait for the next trigger from the high frequency timer interrupt. */
 		xSemaphoreTake( xHighFrequencyTimerSemaphore, portMAX_DELAY );
-		
+
 		/* Just count how many times the task has been unblocked before
 		returning to wait for the semaphore again. */
 		ulHighFrequencyTaskIterations++;
@@ -223,8 +223,8 @@ static void prvHighFrequencyTimerTask( void *pvParameters )
 
 static void prvPortHighFrequencyTimerHandler( int iArg )
 {
-static volatile unsigned long ulExecutionCounter = 0UL;
-unsigned long ulHigherPriorityTaskWoken = pdFALSE;
+	static volatile unsigned long ulExecutionCounter = 0UL;
+	unsigned long ulHigherPriorityTaskWoken = pdFALSE;
 
 	/* Just to avoid compiler warnings about unused parameters. */
 	( void ) iArg;
@@ -236,18 +236,18 @@ unsigned long ulHigherPriorityTaskWoken = pdFALSE;
 	STM_CMP1.reg += ulCompareMatchValue;
 
 	ulExecutionCounter++;
-	
+
 	if( ulExecutionCounter >= ulInterruptsPer10ms )
 	{
 		ulExecutionCounter = xSemaphoreGiveFromISR( xHighFrequencyTimerSemaphore, &ulHigherPriorityTaskWoken );
-		
+
 		/* If the semaphore was given ulExeuctionCounter will now be pdTRUE. */
 		configASSERT( ulExecutionCounter == pdTRUE );
-		
+
 		/* Start counting again. */
 		ulExecutionCounter = 0UL;
 	}
-	
+
 	/* Context switch on exit if necessary. */
 	portYIELD_FROM_ISR( ulHigherPriorityTaskWoken );
 }

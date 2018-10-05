@@ -39,6 +39,12 @@
 #include "led.h"
 #include "cpufreq.h"
 
+/* TriCore specific includes. */
+#include <tc1782.h>
+#include <machine/intrinsics.h>
+#include <machine/cint.h>
+#include <machine/wdtcon.h>
+
 volatile uint32_t g_ticks;
 volatile bool g_blink_flag;
 extern volatile uint64_t FreeRTOSRunTimeTicks;
@@ -152,6 +158,8 @@ void led1_task(void *pvParameters);
 TaskHandle_t g_info_task_handler;
 void print_task(void *pvParameters);
 
+int g_cmp1_ret;
+
 int main(void)
 {
 	_init_uart(mainCOM_TEST_BAUD_RATE);
@@ -174,6 +182,8 @@ int main(void)
 	);
 	/* Setup the hardware for use with the TriCore evaluation board. */
 	prvSetupHardware();
+
+//	ConfigureTimeForRunTimeStats();
 
 	/* Start standard demo/test application flash tasks.  See the comments at
 	the top of this file.  The LED flash tasks are always created.  The other
@@ -278,86 +288,86 @@ void print_task(void *pvParameters)
 	uint32_t TotalRunTime;
 	UBaseType_t ArraySize,x;
 	TaskStatus_t *StatusArray;
-
-	ArraySize=uxTaskGetNumberOfTasks();
-	StatusArray=pvPortMalloc(ArraySize*sizeof(TaskStatus_t));
-	if(StatusArray!=NULL)
-	{
-		ArraySize=uxTaskGetSystemState((TaskStatus_t* 	)StatusArray,
-									   (UBaseType_t		)ArraySize,
-								       (uint32_t*		)&TotalRunTime);
-		printf("TaskName\t\tPriority\t\tTaskNumber\t\t\r\n");
-		for(x=0;x<ArraySize;x++)
-		{
-			printf("%s\t\t%d\t\t\t%d\t\t\t\r\n",
-					StatusArray[x].pcTaskName,
-					(int)StatusArray[x].uxCurrentPriority,
-					(int)StatusArray[x].xTaskNumber);
-
-		}
-	}
-	vPortFree(StatusArray);
-    vTaskDelay(1500 / portTICK_PERIOD_MS);
-	printf("\r\n");
-
-	TaskStatus_t TaskStatus;
-
-    vTaskDelay(1500 / portTICK_PERIOD_MS);
-	printf("\r\n");
-
-	vTaskGetInfo((TaskHandle_t	)g_task0_handler,
-				 (TaskStatus_t*	)&TaskStatus,
-				 (BaseType_t	)pdTRUE,
-			     (eTaskState	)eInvalid);
-	printf("%s\r\n",TaskStatus.pcTaskName);
-	printf("%d\r\n",(int)TaskStatus.xTaskNumber);
-	printf("%d\r\n",TaskStatus.eCurrentState);
-	printf("%d\r\n",(int)TaskStatus.uxCurrentPriority);
-	printf("%d\r\n",(int)TaskStatus.uxBasePriority);
-	printf("%08X\r\n",(int)TaskStatus.pxStackBase);
-	printf("%d\r\n",TaskStatus.usStackHighWaterMark);
-    vTaskDelay(1500 / portTICK_PERIOD_MS);
-	printf("\r\n");
-
-	vTaskGetInfo((TaskHandle_t	)g_task1_handler,
-				 (TaskStatus_t*	)&TaskStatus,
-				 (BaseType_t	)pdTRUE,
-			     (eTaskState	)eInvalid);
-	printf("%s\r\n",TaskStatus.pcTaskName);
-	printf("%d\r\n",(int)TaskStatus.xTaskNumber);
-	printf("%d\r\n",TaskStatus.eCurrentState);
-	printf("%d\r\n",(int)TaskStatus.uxCurrentPriority);
-	printf("%d\r\n",(int)TaskStatus.uxBasePriority);
-	printf("%08X\r\n",(int)TaskStatus.pxStackBase);
-	printf("%d\r\n",TaskStatus.usStackHighWaterMark);
-    vTaskDelay(1500 / portTICK_PERIOD_MS);
-	printf("\r\n");
-
 	eTaskState TaskState;
 	char info_buf[1024];
 
-	TaskState=eTaskGetState(g_info_task_handler);
-	memset(info_buf,0,10);
-	switch((int)TaskState)
-	{
-		case 0:
-			sprintf(info_buf,"Running");
-			break;
-		case 1:
-			sprintf(info_buf,"Ready");
-			break;
-		case 2:
-			sprintf(info_buf,"Suspend");
-			break;
-		case 3:
-			sprintf(info_buf,"Delete");
-			break;
-		case 4:
-			sprintf(info_buf,"Invalid");
-			break;
-	}
-	printf("%d,%s\r\n",TaskState,info_buf);
-	printf("\r\n");
+//	ArraySize=uxTaskGetNumberOfTasks();
+//	StatusArray=pvPortMalloc(ArraySize*sizeof(TaskStatus_t));
+//	if(StatusArray!=NULL)
+//	{
+//		ArraySize=uxTaskGetSystemState((TaskStatus_t* 	)StatusArray,
+//									   (UBaseType_t		)ArraySize,
+//								       (uint32_t*		)&TotalRunTime);
+//		printf("TaskName\t\tPriority\t\tTaskNumber\t\t\r\n");
+//		for(x=0;x<ArraySize;x++)
+//		{
+//			printf("%s\t\t%d\t\t\t%d\t\t\t\r\n",
+//					StatusArray[x].pcTaskName,
+//					(int)StatusArray[x].uxCurrentPriority,
+//					(int)StatusArray[x].xTaskNumber);
+//
+//		}
+//	}
+//	vPortFree(StatusArray);
+//    vTaskDelay(1500 / portTICK_PERIOD_MS);
+//	printf("\r\n");
+//
+//	TaskStatus_t TaskStatus;
+//
+//    vTaskDelay(1500 / portTICK_PERIOD_MS);
+//	printf("\r\n");
+//
+//	vTaskGetInfo((TaskHandle_t	)g_task0_handler,
+//				 (TaskStatus_t*	)&TaskStatus,
+//				 (BaseType_t	)pdTRUE,
+//			     (eTaskState	)eInvalid);
+//	printf("%s\r\n",TaskStatus.pcTaskName);
+//	printf("%d\r\n",(int)TaskStatus.xTaskNumber);
+//	printf("%d\r\n",TaskStatus.eCurrentState);
+//	printf("%d\r\n",(int)TaskStatus.uxCurrentPriority);
+//	printf("%d\r\n",(int)TaskStatus.uxBasePriority);
+//	printf("%08X\r\n",(int)TaskStatus.pxStackBase);
+//	printf("%d\r\n",TaskStatus.usStackHighWaterMark);
+//    vTaskDelay(1500 / portTICK_PERIOD_MS);
+//	printf("\r\n");
+//
+//	vTaskGetInfo((TaskHandle_t	)g_task1_handler,
+//				 (TaskStatus_t*	)&TaskStatus,
+//				 (BaseType_t	)pdTRUE,
+//			     (eTaskState	)eInvalid);
+//	printf("%s\r\n",TaskStatus.pcTaskName);
+//	printf("%d\r\n",(int)TaskStatus.xTaskNumber);
+//	printf("%d\r\n",TaskStatus.eCurrentState);
+//	printf("%d\r\n",(int)TaskStatus.uxCurrentPriority);
+//	printf("%d\r\n",(int)TaskStatus.uxBasePriority);
+//	printf("%08X\r\n",(int)TaskStatus.pxStackBase);
+//	printf("%d\r\n",TaskStatus.usStackHighWaterMark);
+//    vTaskDelay(1500 / portTICK_PERIOD_MS);
+//	printf("\r\n");
+//
+//
+//	TaskState=eTaskGetState(g_info_task_handler);
+//	memset(info_buf,0,10);
+//	switch((int)TaskState)
+//	{
+//		case 0:
+//			sprintf(info_buf,"Running");
+//			break;
+//		case 1:
+//			sprintf(info_buf,"Ready");
+//			break;
+//		case 2:
+//			sprintf(info_buf,"Suspend");
+//			break;
+//		case 3:
+//			sprintf(info_buf,"Delete");
+//			break;
+//		case 4:
+//			sprintf(info_buf,"Invalid");
+//			break;
+//	}
+//	printf("%d,%s\r\n",TaskState,info_buf);
+//	printf("\r\n");
 
 	while(1)
 	{
@@ -372,13 +382,29 @@ void print_task(void *pvParameters)
 		printf("TaskList Len:%d\r\n", strlen(info_buf));
 		printf("%s\r\n",info_buf);
 
-//		vTaskGetRunTimeStats(info_buf);
-//		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
-//		printf("%s\r\n",info_buf);
-//
-//		uint64_t tmpU64 = GetFreeRTOSRunTimeTicks();
-//		printf("%016llx %llu\n", tmpU64, tmpU64);
-//		printf("%016llx %llu\n", FreeRTOSRunTimeTicks, FreeRTOSRunTimeTicks);
+		printf("TickCMP1:%llu\n",
+				GetFreeRTOSRunTimeTicks());
+//		printf("STM_CLC\t%08X\t:%08X\n\n", &STM_CLC, STM_CLC.reg);
+//		printf("STM_ID\t%08X\t:%08X\n\n", &STM_ID, STM_ID.reg);
+//		printf("STM_TIM0\t%08X\t:%08X\n\n", &STM_TIM0, STM_TIM0.reg);
+//		printf("STM_TIM1\t%08X\t:%08X\n\n", &STM_TIM1, STM_TIM1.reg);
+//		printf("STM_TIM2\t%08X\t:%08X\n\n", &STM_TIM2, STM_TIM2.reg);
+//		printf("STM_TIM3\t%08X\t:%08X\n\n", &STM_TIM3, STM_TIM3.reg);
+//		printf("STM_TIM4\t%08X\t:%08X\n\n", &STM_TIM4, STM_TIM4.reg);
+//		printf("STM_TIM5\t%08X\t:%08X\n\n", &STM_TIM5, STM_TIM5.reg);
+//		printf("STM_TIM6\t%08X\t:%08X\n\n", &STM_TIM6, STM_TIM6.reg);
+//		printf("STM_CAP\t%08X\t:%08X\n\n", &STM_CAP, STM_CAP.reg);
+//		printf("STM_CMP0\t%08X\t:%08X\n\n", &STM_CMP0, STM_CMP0.reg);
+//		printf("STM_CMP1\t%08X\t:%08X\n\n", &STM_CMP1, STM_CMP1.reg);
+//		printf("STM_CMCON\t%08X\t:%08X\n\n", &STM_CMCON, STM_CMCON.reg);
+//		printf("STM_ICR\t%08X\t:%08X\n\n", &STM_ICR, STM_ICR.reg);
+//		printf("STM_ISRR\t%08X\t:%08X\n\n", &STM_ISRR, STM_ISRR.reg);
+//		printf("STM_SRC1\t%08X\t:%08X\n\n", &STM_SRC1, STM_SRC1.reg);
+//		printf("STM_SRC0\t%08X\t:%08X\n\n", &STM_SRC0, STM_SRC0.reg);
+
+		vTaskGetRunTimeStats(info_buf);
+		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+		printf("%s\r\n",info_buf);
 
 	    vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}

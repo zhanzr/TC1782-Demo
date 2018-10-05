@@ -115,12 +115,13 @@ peripheral clock. */
 #define	configUSE_TRACE_FACILITY	1
 #define	configUSE_STATS_FORMATTING_FUNCTIONS	1
 
-//#define	configGENERATE_RUN_TIME_STATS	1
-//#define	configUSE_STATS_FORMATTING_FUNCTIONS	1
-//
-//#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()  ConfigureTimeForRunTimeStats()
-//#define portGET_RUN_TIME_COUNTER_VALUE()		GetFreeRTOSRunTimeTicks()
-#define configRUNTIME_STAT_INTERRUPT_PRIORITY			5
+#define	configGENERATE_RUN_TIME_STATS	1
+#define	configUSE_STATS_FORMATTING_FUNCTIONS	1
+
+#define	configRUN_TIME_STATS_RATE_HZ	(10 * configTICK_RATE_HZ)
+#define portCONFIGURE_TIMER_FOR_RUN_TIME_STATS()  ConfigureTimeForRunTimeStats()
+#define portGET_RUN_TIME_COUNTER_VALUE()		GetFreeRTOSRunTimeTicks()
+#define configRUNTIME_STAT_INTERRUPT_PRIORITY			3
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES 				0
@@ -144,7 +145,7 @@ peripheral clock. */
 #define INCLUDE_vTaskDelay						1
 
 #define configMAX_SYSCALL_INTERRUPT_PRIORITY	64 /* Interrupt above priority 64 are not effected by critical sections, but cannot call interrupt safe FreeRTOS functions. */
-#define configKERNEL_INTERRUPT_PRIORITY			60  /* This is defined here for clarity, but the value must not be changed from 2. */
+#define configKERNEL_INTERRUPT_PRIORITY			2  /* This is defined here for clarity, but the value must not be changed from 2. */
 #define configKERNEL_YIELD_PRIORITY				1  /* This is defined here for clarity, but must not be changed from its default value of 1. */
 
 /* Interrupt priorities. */

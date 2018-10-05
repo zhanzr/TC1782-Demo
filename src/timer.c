@@ -1,79 +1,91 @@
 /*====================================================================
-* Project:  Board Support Package (BSP)
-* Function: Hardware-dependent module providing a time base
-*           by programming a system timer (TriCore TC1782 version).
-*
-* Copyright HighTec EDV-Systeme GmbH 1982-2015
-*====================================================================*/
+ * Project:  Board Support Package (BSP)
+ * Function: Hardware-dependent module providing a time base
+ *           by programming a system timer (TriCore TC1782 version).
+ *
+ * Copyright HighTec EDV-Systeme GmbH 1982-2015
+ *====================================================================*/
 
+#include <stdint.h>
+#include <stdio.h>
+
+#include <tc1782.h>
+#include <machine/intrinsics.h>
 #include <machine/cint.h>
 #include <machine/wdtcon.h>
-
 #include <tc1782/stm.h>
 
 #include "timer.h"
 #include "cpufreq.h"
+#include "portmacro.h"
+#include "FreeRTOSConfig.h"
 
-#define TICK_INTERRUPT  4
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
 
-/* timer reload value (needed for subtick calculation) */
-static unsigned int reload_value = 0;
+extern int g_cmp1_ret;
 
-/* pointer to user specified timer callback function */
-static TCF user_handler = (TCF)0;
+volatile uint64_t FreeRTOSRunTimeTicks;
 
-/* timer interrupt routine */
-static void tick_irq(int reload_value)
+#define CMP1_MATCH_VAL	( configPERIPHERAL_CLOCK_HZ /  configRUN_TIME_STATS_RATE_HZ)
+
+const uint64_t GetFreeRTOSRunTimeTicks(void)
 {
-	/* set new compare value */
-	STM_CMP0.reg += (unsigned int)reload_value;
-	if (user_handler)
+	return FreeRTOSRunTimeTicks;
+}
+
+static void prvStatTickHandler(int iArg) __attribute__((longcall));
+
+static void prvStatTickHandler(int iArg)
+{
+	++ FreeRTOSRunTimeTicks;
+
+	/* Clear the interrupt source. */
+	STM_ISRR.bits.CMP1IRR = 0x01UL;
+//	STM_CMP1.reg += (uint32_t)iArg;
+}
+
+void ConfigureTimeForRunTimeStats(void)
+{
+	FreeRTOSRunTimeTicks = 0;
+
+	taskENTER_CRITICAL();
 	{
-		user_handler();
+		/* Determine how many bits are used without changing other bits in the CMCON register. */
+		STM_CMCON.bits.MSIZE1 &= ~0x1fUL;
+		STM_CMCON.bits.MSIZE1 |= (0x1f - __CLZ( CMP1_MATCH_VAL));
+		/* Take into account the current time so a tick doesn't happen immediately. */
+		STM_CMP1.reg = CMP1_MATCH_VAL + STM_TIM0.reg;
+
+		int cmp1_ret = _install_int_handler( configRUNTIME_STAT_INTERRUPT_PRIORITY,
+				prvStatTickHandler,
+				CMP1_MATCH_VAL );
+		if( 0 != cmp1_ret )
+		{
+			/* Set-up the interrupt. */
+			STM_SRC1.bits.SRPN = configRUNTIME_STAT_INTERRUPT_PRIORITY;
+			STM_SRC1.bits.CLRR = 1UL;
+			STM_SRC1.bits.SRE = 1UL;
+
+			/* Enable the Interrupt. */
+			STM_ISRR.reg &= ~( 0x03UL << 2UL );
+			STM_ISRR.reg |= ( 0x1UL << 2UL );
+			STM_ICR.reg &= ~( 0x07UL << 4UL );
+			STM_ICR.reg |= ( 0x5UL << 4UL );
+
+			/* Enable the Interrupt. */
+			STM_ISRR.reg &= ~( 0x0CUL );
+			STM_ISRR.bits.CMP1IRR = 1;
+			STM_ICR.reg &= ~( 0x70UL );
+			STM_ICR.bits.CMP1EN = 1;
+			STM_ICR.bits.CMP1OS = 1;
+		}
+		else
+		{
+			/* Failed to install the interrupt. */
+			configASSERT( ( ( volatile void * ) NULL ) );
+		}
 	}
-}
-
-static int STM_enable(void)
-{
-	unlock_wdtcon();
-	STM_CLC.reg = 0x100;
-	(void)STM_CLC.reg;
-	lock_wdtcon();
-
-	return 0;
-}
-
-/* Initialise timer at rate <hz> */
-void TimerInit(unsigned int hz)
-{
-	unsigned int frequency;
-
-	/* Compute CPU frequency and timer reload value. */
-	frequency = get_fpi_frequency();
-	reload_value = frequency / hz;
-
-	/* Install handler for timer interrupt. */
-	_install_int_handler(TICK_INTERRUPT, tick_irq, (int)reload_value);
-
-	/*
-		initialise STM
-		first must set clock for STM and enable module
-		register is endinit protected
-	 */
-	STM_enable();
-
-	STM_CMP0.reg = STM_TIM0.reg + reload_value;
-	STM_CMCON.bits.MSIZE0 = 31;
-
-	STM_ICR.reg = STM_ICR_CMP0EN_MASK;
-
-	/* enable service request node 0 of STM and assign priority */
-	STM_SRC0.bits.SRPN = TICK_INTERRUPT;
-	STM_SRC0.bits.SRE = 1;
-}
-
-/* Install <handler> as timer callback function */
-void TimerSetHandler(TCF handler)
-{
-	user_handler = handler;
+	taskEXIT_CRITICAL();
 }

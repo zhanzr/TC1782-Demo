@@ -10,31 +10,31 @@
     the terms of the GNU General Public License (version 2) as published by the
     Free Software Foundation >>>> AND MODIFIED BY <<<< the FreeRTOS exception.
 
-    ***************************************************************************
+ ***************************************************************************
     >>!   NOTE: The modification to the GPL is included to allow you to     !<<
     >>!   distribute a combined work that includes FreeRTOS without being   !<<
     >>!   obliged to provide the source code for proprietary components     !<<
     >>!   outside of the FreeRTOS kernel.                                   !<<
-    ***************************************************************************
+ ***************************************************************************
 
     FreeRTOS is distributed in the hope that it will be useful, but WITHOUT ANY
     WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
     FOR A PARTICULAR PURPOSE.  Full license text is available on the following
     link: http://www.freertos.org/a00114.html
 
-    ***************************************************************************
-     *                                                                       *
-     *    FreeRTOS provides completely free yet professionally developed,    *
-     *    robust, strictly quality controlled, supported, and cross          *
-     *    platform software that is more than just the market leader, it     *
-     *    is the industry's de facto standard.                               *
-     *                                                                       *
-     *    Help yourself get started quickly while simultaneously helping     *
-     *    to support the FreeRTOS project by purchasing a FreeRTOS           *
-     *    tutorial book, reference manual, or both:                          *
-     *    http://www.FreeRTOS.org/Documentation                              *
-     *                                                                       *
-    ***************************************************************************
+ ***************************************************************************
+ *                                                                       *
+ *    FreeRTOS provides completely free yet professionally developed,    *
+ *    robust, strictly quality controlled, supported, and cross          *
+ *    platform software that is more than just the market leader, it     *
+ *    is the industry's de facto standard.                               *
+ *                                                                       *
+ *    Help yourself get started quickly while simultaneously helping     *
+ *    to support the FreeRTOS project by purchasing a FreeRTOS           *
+ *    tutorial book, reference manual, or both:                          *
+ *    http://www.FreeRTOS.org/Documentation                              *
+ *                                                                       *
+ ***************************************************************************
 
     http://www.FreeRTOS.org/FAQHelp.html - Having a problem?  Start by reading
     the FAQ page "My application does not run, what could be wrong?".  Have you
@@ -65,7 +65,7 @@
     mission critical applications that require provable dependability.
 
     1 tab == 4 spaces!
-*/
+ */
 
 /* Standard includes. */
 #include <stdlib.h>
@@ -83,8 +83,8 @@
 #include "list.h"
 
 #if configCHECK_FOR_STACK_OVERFLOW > 0
-	#error "Stack checking cannot be used with this port, as, unlike most ports, the pxTopOfStack member of the TCB is consumed CSA.  CSA starvation, loosely equivalent to stack overflow, will result in a trap exception."
-	/* The stack pointer is accessible using portCSA_TO_ADDRESS( portCSA_TO_ADDRESS( pxCurrentTCB->pxTopOfStack )[ 0 ] )[ 2 ]; */
+#error "Stack checking cannot be used with this port, as, unlike most ports, the pxTopOfStack member of the TCB is consumed CSA.  CSA starvation, loosely equivalent to stack overflow, will result in a trap exception."
+/* The stack pointer is accessible using portCSA_TO_ADDRESS( portCSA_TO_ADDRESS( pxCurrentTCB->pxTopOfStack )[ 0 ] )[ 2 ]; */
 #endif /* configCHECK_FOR_STACK_OVERFLOW */
 
 
@@ -133,15 +133,14 @@ static void prvInterruptYield( int iTrapIdentification );
 extern volatile uint32_t *pxCurrentTCB;
 
 /* Precalculate the compare match value at compile time. */
-static const uint32_t ulCompareMatchValue = ( configPERIPHERAL_CLOCK_HZ / configTICK_RATE_HZ );
-static const uint32_t ulStatCompareMatchValue = ( configPERIPHERAL_CLOCK_HZ / (10*configTICK_RATE_HZ) );
+#define CMP0_MATCH_VAL	( configPERIPHERAL_CLOCK_HZ / configTICK_RATE_HZ )
 
 /*-----------------------------------------------------------*/
 
 StackType_t *pxPortInitialiseStack( StackType_t * pxTopOfStack, TaskFunction_t pxCode, void *pvParameters )
 {
-uint32_t *pulUpperCSA = NULL;
-uint32_t *pulLowerCSA = NULL;
+	uint32_t *pulUpperCSA = NULL;
+	uint32_t *pulLowerCSA = NULL;
 
 	/* 16 Address Registers (4 Address registers are global), 16 Data
 	Registers, and 3 System Registers.
@@ -222,10 +221,10 @@ uint32_t *pulLowerCSA = NULL;
 
 int32_t xPortStartScheduler( void )
 {
-extern void vTrapInstallHandlers( void );
-uint32_t ulMFCR = 0UL;
-uint32_t *pulUpperCSA = NULL;
-uint32_t *pulLowerCSA = NULL;
+	extern void vTrapInstallHandlers( void );
+	uint32_t ulMFCR = 0UL;
+	uint32_t *pulUpperCSA = NULL;
+	uint32_t *pulLowerCSA = NULL;
 
 	/* Interrupts at or below configMAX_SYSCALL_INTERRUPT_PRIORITY are disable
 	when this function is called. */
@@ -285,53 +284,6 @@ uint32_t *pulLowerCSA = NULL;
 	return 0;
 }
 /*-----------------------------------------------------------*/
-volatile uint64_t FreeRTOSRunTimeTicks;
-
-uint64_t GetFreeRTOSRunTimeTicks(void)
-{
-	return FreeRTOSRunTimeTicks;
-}
-
-static void prvStatTickHandler(int iArg)
-{
-	++ FreeRTOSRunTimeTicks;
-
-	/* Clear the interrupt source. */
-	STM_ISRR.bits.CMP1IRR = 0x01UL;
-	STM_CMP1.reg += ulStatCompareMatchValue;
-}
-
-void ConfigureTimeForRunTimeStats(void)
-{
-	FreeRTOSRunTimeTicks=0;
-
-	/* Determine how many bits are used without changing other bits in the CMCON register. */
-	STM_CMCON.bits.MSIZE1 &= ~0x1fUL;
-	STM_CMCON.bits.MSIZE1 |= (0x1f - __CLZ( ulStatCompareMatchValue));
-
-	/* Take into account the current time so a tick doesn't happen immediately. */
-	STM_CMP1.reg = ulStatCompareMatchValue + STM_TIM0.reg;
-
-	if( 0 != _install_int_handler( configRUNTIME_STAT_INTERRUPT_PRIORITY, prvStatTickHandler, 0 ) )
-	{
-		/* Set-up the interrupt. */
-		STM_SRC1.bits.SRPN = configRUNTIME_STAT_INTERRUPT_PRIORITY;
-		STM_SRC1.bits.CLRR = 1UL;
-		STM_SRC1.bits.SRE = 1UL;
-
-		/* Enable the Interrupt. */
-		STM_ISRR.reg &= ~( 0x0CUL );
-		STM_ISRR.bits.CMP1IRR = 0x1UL;
-		STM_ISRR.reg &= ~( 0x0FUL );
-		STM_ICR.bits.CMP1EN = 0x1UL;
-	}
-	else
-	{
-		/* Failed to install the Tick Interrupt. */
-		configASSERT( ( ( volatile void * ) NULL ) );
-	}
-}
-
 static void prvSetupTimerInterrupt( void )
 {
 	/* Set-up the clock divider. */
@@ -345,14 +297,14 @@ static void prvSetupTimerInterrupt( void )
 	}
 	lock_wdtcon();
 
-    /* Determine how many bits are used without changing other bits in the CMCON register. */
+	/* Determine how many bits are used without changing other bits in the CMCON register. */
 	STM_CMCON.bits.MSIZE0 &= ~( 0x1fUL );
-	STM_CMCON.bits.MSIZE0 |= ( 0x1fUL - __CLZ( ulCompareMatchValue) );
+	STM_CMCON.bits.MSIZE0 |= ( 0x1fUL - __CLZ( CMP0_MATCH_VAL) );
 
 	/* Take into account the current time so a tick doesn't happen immediately. */
-	STM_CMP0.reg = ulCompareMatchValue + STM_TIM0.reg;
+	STM_CMP0.reg = CMP0_MATCH_VAL + STM_TIM0.reg;
 
-	if( 0 != _install_int_handler( configKERNEL_INTERRUPT_PRIORITY, prvSystemTickHandler, 0 ) )
+	if( 0 != _install_int_handler( configKERNEL_INTERRUPT_PRIORITY, prvSystemTickHandler, CMP0_MATCH_VAL ) )
 	{
 		/* Set-up the interrupt. */
 		STM_SRC0.bits.SRPN = configKERNEL_INTERRUPT_PRIORITY;
@@ -362,7 +314,7 @@ static void prvSetupTimerInterrupt( void )
 		/* Enable the Interrupt. */
 		STM_ISRR.reg &= ~( 0x03UL );
 		STM_ISRR.bits.CMP0IRR = 0x1UL;
-		STM_ISRR.reg &= ~( 0x07UL );
+		STM_ICR.reg &= ~( 0x07UL );
 		STM_ICR.bits.CMP0EN = 0x1UL;
 	}
 	else
@@ -375,14 +327,11 @@ static void prvSetupTimerInterrupt( void )
 
 static void prvSystemTickHandler( int iArg )
 {
-uint32_t ulSavedInterruptMask;
-uint32_t *pxUpperCSA = NULL;
-uint32_t xUpperCSA = 0UL;
-extern volatile uint32_t *pxCurrentTCB;
-int32_t lYieldRequired;
-
-	/* Just to avoid compiler warnings about unused parameters. */
-	( void ) iArg;
+	uint32_t ulSavedInterruptMask;
+	uint32_t *pxUpperCSA = NULL;
+	uint32_t xUpperCSA = 0UL;
+	extern volatile uint32_t *pxCurrentTCB;
+	int32_t lYieldRequired;
 
 	/* Clear the interrupt source. */
 	STM_ISRR.bits.CMP0IRR = 0x01UL;
@@ -404,7 +353,7 @@ int32_t lYieldRequired;
 	Changing the tick source to a timer that has an automatic reset on compare
 	match (such as a GPTA timer) will reduce the maximum possible additional
 	period to exactly 1 times the desired period. */
-	STM_CMP0.reg += ulCompareMatchValue;
+	STM_CMP0.reg += (uint32_t)iArg;
 
 	/* Kernel API calls require Critical Sections. */
 	ulSavedInterruptMask = portSET_INTERRUPT_MASK_FROM_ISR();
@@ -468,8 +417,8 @@ int32_t lYieldRequired;
  */
 void vPortReclaimCSA( uint32_t *pxTCB )
 {
-uint32_t pxHeadCSA, pxTailCSA, pxFreeCSA;
-uint32_t *pulNextCSA;
+	uint32_t pxHeadCSA, pxTailCSA, pxFreeCSA;
+	uint32_t *pulNextCSA;
 
 	/* A pointer to the first CSA in the list of CSAs consumed by the task is
 	stored in the first element of the tasks TCB structure (where the stack
@@ -529,14 +478,14 @@ void vPortEndScheduler( void )
 
 static void prvTrapYield( int iTrapIdentification )
 {
-uint32_t *pxUpperCSA = NULL;
-uint32_t xUpperCSA = 0UL;
-extern volatile uint32_t *pxCurrentTCB;
+	uint32_t *pxUpperCSA = NULL;
+	uint32_t xUpperCSA = 0UL;
+	extern volatile uint32_t *pxCurrentTCB;
 
 	switch( iTrapIdentification )
 	{
-		case portSYSCALL_TASK_YIELD:
-			/* Save the context of a task.
+	case portSYSCALL_TASK_YIELD:
+		/* Save the context of a task.
 			The upper context is automatically saved when entering a trap or interrupt.
 			Need to save the lower context as well and copy the PCXI CSA ID into
 			pxCurrentTCB->pxTopOfStack. Only Lower Context CSA IDs may be saved to the
@@ -555,30 +504,30 @@ extern volatile uint32_t *pxCurrentTCB;
 			of the task. RFE will restore the upper context of the task, jump to the
 			return address and restore the previous state of interrupts being
 			enabled/disabled. */
-			_disable();
-			_dsync();
-			xUpperCSA = _mfcr( PCXI_ADDR );
-			pxUpperCSA = portCSA_TO_ADDRESS( xUpperCSA );
-			*pxCurrentTCB = pxUpperCSA[ 0 ];
-			vTaskSwitchContext();
-			pxUpperCSA[ 0 ] = *pxCurrentTCB;
-			CPU_SRC0.bits.SETR = 0;
-			_isync();
-			break;
+		_disable();
+		_dsync();
+		xUpperCSA = _mfcr( PCXI_ADDR );
+		pxUpperCSA = portCSA_TO_ADDRESS( xUpperCSA );
+		*pxCurrentTCB = pxUpperCSA[ 0 ];
+		vTaskSwitchContext();
+		pxUpperCSA[ 0 ] = *pxCurrentTCB;
+		CPU_SRC0.bits.SETR = 0;
+		_isync();
+		break;
 
-		default:
-			/* Unimplemented trap called. */
-			configASSERT( ( ( volatile void * ) NULL ) );
-			break;
+	default:
+		/* Unimplemented trap called. */
+		configASSERT( ( ( volatile void * ) NULL ) );
+		break;
 	}
 }
 /*-----------------------------------------------------------*/
 
 static void prvInterruptYield( int iId )
 {
-uint32_t *pxUpperCSA = NULL;
-uint32_t xUpperCSA = 0UL;
-extern volatile uint32_t *pxCurrentTCB;
+	uint32_t *pxUpperCSA = NULL;
+	uint32_t xUpperCSA = 0UL;
+	extern volatile uint32_t *pxCurrentTCB;
 
 	/* Just to remove compiler warnings. */
 	( void ) iId;
@@ -616,7 +565,7 @@ extern volatile uint32_t *pxCurrentTCB;
 
 uint32_t uxPortSetInterruptMaskFromISR( void )
 {
-uint32_t uxReturn = 0UL;
+	uint32_t uxReturn = 0UL;
 
 	_disable();
 	uxReturn = _mfcr( ICR_ADDR );
