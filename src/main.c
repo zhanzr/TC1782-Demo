@@ -305,6 +305,89 @@ void led1_task(void *pvParameters)
 
 void print_task(void *pvParameters)
 {
+	List_t TestList;
+	ListItem_t ListItem1;
+	ListItem_t ListItem2;
+	ListItem_t ListItem3;
+
+	vListInitialise(&TestList);
+	vListInitialiseItem(&ListItem1);
+	vListInitialiseItem(&ListItem2);
+	vListInitialiseItem(&ListItem3);
+
+	ListItem1.xItemValue=40;
+	ListItem2.xItemValue=60;
+	ListItem3.xItemValue=50;
+
+	printf("Initial Status\n");
+	printf("TestList                          %08X					\r\n",(int)&TestList);
+	printf("TestList->pxIndex                 %08X					\r\n",(int)TestList.pxIndex);
+	printf("TestList->xListEnd                %08X					\r\n",(int)(&TestList.xListEnd));
+	printf("ListItem1                         %08X					\r\n",(int)&ListItem1);
+	printf("ListItem2                         %08X					\r\n",(int)&ListItem2);
+	printf("ListItem3                         %08X					\r\n",(int)&ListItem3);
+	printf("\n\n");
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+
+    printf("Insert the 1st Item\n");
+	vListInsert(&TestList,&ListItem1);
+	printf("TestList->xListEnd->pxNext        %08X					\r\n",(int)(TestList.xListEnd.pxNext));
+	printf("ListItem1->pxNext                 %08X					\r\n",(int)(ListItem1.pxNext));
+	printf("TestList->xListEnd->pxPrevious    %08X					\r\n",(int)(TestList.xListEnd.pxPrevious));
+	printf("ListItem1->pxPrevious             %08X					\r\n",(int)(ListItem1.pxPrevious));
+	printf("\n\n");
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+
+    printf("Insert the 2nd Item\n");
+	vListInsert(&TestList,&ListItem2);
+	printf("TestList->xListEnd->pxNext        %08X					\r\n",(int)(TestList.xListEnd.pxNext));
+	printf("ListItem1->pxNext                 %08X					\r\n",(int)(ListItem1.pxNext));
+	printf("ListItem2->pxNext                 %08X					\r\n",(int)(ListItem2.pxNext));
+	printf("TestList->xListEnd->pxPrevious    %08X					\r\n",(int)(TestList.xListEnd.pxPrevious));
+	printf("ListItem1->pxPrevious             %08X					\r\n",(int)(ListItem1.pxPrevious));
+	printf("ListItem2->pxPrevious             %08X					\r\n",(int)(ListItem2.pxPrevious));
+	printf("\n\n");
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+
+    printf("Insert the 3rd Item\n");
+	vListInsert(&TestList,&ListItem3);
+	printf("TestList->xListEnd->pxNext        %08X					\r\n",(int)(TestList.xListEnd.pxNext));
+	printf("ListItem1->pxNext                 %08X					\r\n",(int)(ListItem1.pxNext));
+	printf("ListItem3->pxNext                 %08X					\r\n",(int)(ListItem3.pxNext));
+	printf("ListItem2->pxNext                 %08X					\r\n",(int)(ListItem2.pxNext));
+	printf("TestList->xListEnd->pxPrevious    %08X					\r\n",(int)(TestList.xListEnd.pxPrevious));
+	printf("ListItem1->pxPrevious             %08X					\r\n",(int)(ListItem1.pxPrevious));
+	printf("ListItem3->pxPrevious             %08X					\r\n",(int)(ListItem3.pxPrevious));
+	printf("ListItem2->pxPrevious             %08X					\r\n",(int)(ListItem2.pxPrevious));
+	printf("\n\n");
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+
+    printf("Remove the 2nd Item\n");
+	uxListRemove(&ListItem2);
+	printf("TestList->xListEnd->pxNext        %08X					\r\n",(int)(TestList.xListEnd.pxNext));
+	printf("ListItem1->pxNext                 %08X					\r\n",(int)(ListItem1.pxNext));
+	printf("ListItem3->pxNext                 %08X					\r\n",(int)(ListItem3.pxNext));
+	printf("TestList->xListEnd->pxPrevious    %08X					\r\n",(int)(TestList.xListEnd.pxPrevious));
+	printf("ListItem1->pxPrevious             %08X					\r\n",(int)(ListItem1.pxPrevious));
+	printf("ListItem3->pxPrevious             %08X					\r\n",(int)(ListItem3.pxPrevious));
+	printf("\n\n");
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+
+    printf("Move Index to next and append the 2nd Item at End\n");
+	TestList.pxIndex=TestList.pxIndex->pxNext;
+	vListInsertEnd(&TestList,&ListItem2);
+	printf("TestList->pxIndex                 %08X					\r\n",(int)TestList.pxIndex);
+	printf("TestList->xListEnd->pxNext        %08X					\r\n",(int)(TestList.xListEnd.pxNext));
+	printf("ListItem2->pxNext                 %08X					\r\n",(int)(ListItem2.pxNext));
+	printf("ListItem1->pxNext                 %08X					\r\n",(int)(ListItem1.pxNext));
+	printf("ListItem3->pxNext                 %08X					\r\n",(int)(ListItem3.pxNext));
+	printf("TestList->xListEnd->pxPrevious    %08X					\r\n",(int)(TestList.xListEnd.pxPrevious));
+	printf("ListItem2->pxPrevious             %08X					\r\n",(int)(ListItem2.pxPrevious));
+	printf("ListItem1->pxPrevious             %08X					\r\n",(int)(ListItem1.pxPrevious));
+	printf("ListItem3->pxPrevious             %08X					\r\n",(int)(ListItem3.pxPrevious));
+	printf("\n\n");
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+
 	while(1)
 	{
 		printf("FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
@@ -317,7 +400,7 @@ void print_task(void *pvParameters)
 //    	portDISABLE_INTERRUPTS();
 //    	simple_delay(500);
 //    	portENABLE_INTERRUPTS();
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(10000 / portTICK_PERIOD_MS);
 	}
 }
 
