@@ -231,8 +231,6 @@ int main(void)
 /*-----------------------------------------------------------*/
 void start_task(void *pvParameters)
 {
-    taskENTER_CRITICAL();
-
     xTaskCreate((TaskFunction_t )led0_task,
                 (const char*    )"led0_task",
                 (uint16_t       )512,
@@ -254,7 +252,6 @@ void start_task(void *pvParameters)
                 (UBaseType_t    )tskIDLE_PRIORITY + 4,
                 (TaskHandle_t*  )&FLOATTask_Handler);
     vTaskDelete(StartTask_Handler);
-    taskEXIT_CRITICAL();
 }
 
 void led0_task(void *pvParameters)
@@ -262,18 +259,33 @@ void led0_task(void *pvParameters)
     while(1)
     {
     	vParTestToggleLED(0);
+//    	portDISABLE_INTERRUPTS();
     	vTaskDelay(500 / portTICK_PERIOD_MS);
+//    	portENABLE_INTERRUPTS();
     }
+}
+
+//Block Style Delay
+void simple_delay(uint32_t t)
+{
+	for(uint32_t i=0; i<10000; ++i)
+	{
+		for(uint32_t j=0; j<t; ++j)
+		{
+			_nop();
+		}
+	}
 }
 
 void led1_task(void *pvParameters)
 {
     while(1)
     {
-    	vParTestSetLED(1, 0);
-        vTaskDelay(200 / portTICK_PERIOD_MS);
-    	vParTestSetLED(1, 1);
-        vTaskDelay(800 / portTICK_PERIOD_MS);
+        vParTestToggleLED(1);
+//    	portDISABLE_INTERRUPTS();
+//    	simple_delay(500);
+//    	portENABLE_INTERRUPTS();
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
     }
 }
 
@@ -288,6 +300,9 @@ void print_task(void *pvParameters)
 				__TRICORE_CORE__
 		);
 
+//    	portDISABLE_INTERRUPTS();
+//    	simple_delay(500);
+//    	portENABLE_INTERRUPTS();
         vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
