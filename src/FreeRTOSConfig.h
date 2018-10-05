@@ -115,6 +115,7 @@ peripheral clock. */
 
 #define	configUSE_TRACE_FACILITY	1
 #define	configUSE_STATS_FORMATTING_FUNCTIONS	1
+#define configSUPPORT_STATIC_ALLOCATION 1
 
 /* Co-routine definitions. */
 #define configUSE_CO_ROUTINES 				0

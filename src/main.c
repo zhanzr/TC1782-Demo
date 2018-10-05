@@ -228,22 +228,70 @@ int main(void)
 	}
 	return EXIT_SUCCESS;
 }
+
+#define	LED0_STACK_SIZE	256
+StackType_t led0_stack[LED0_STACK_SIZE];
+StaticTask_t led0_task_tcb;
+
+#define	LED1_STACK_SIZE	256
+StackType_t led1_stack[LED1_STACK_SIZE];
+StaticTask_t led1_task_tcb;
+
+static StackType_t IdleTaskStack[configMINIMAL_STACK_SIZE];
+static StaticTask_t IdleTaskTCB;
+
+static StackType_t TimerTaskStack[configTIMER_TASK_STACK_DEPTH];
+static StaticTask_t TimerTaskTCB;
+
+void vApplicationGetIdleTaskMemory(StaticTask_t **ppxIdleTaskTCBBuffer,
+								   StackType_t **ppxIdleTaskStackBuffer,
+								   uint32_t *pulIdleTaskStackSize)
+{
+	*ppxIdleTaskTCBBuffer=&IdleTaskTCB;
+	*ppxIdleTaskStackBuffer=IdleTaskStack;
+	*pulIdleTaskStackSize=configMINIMAL_STACK_SIZE;
+}
+
+void vApplicationGetTimerTaskMemory(StaticTask_t **ppxTimerTaskTCBBuffer,
+									StackType_t **ppxTimerTaskStackBuffer,
+									uint32_t *pulTimerTaskStackSize)
+{
+	*ppxTimerTaskTCBBuffer=&TimerTaskTCB;
+	*ppxTimerTaskStackBuffer=TimerTaskStack;
+	*pulTimerTaskStackSize=configTIMER_TASK_STACK_DEPTH;
+}
+
 /*-----------------------------------------------------------*/
 void start_task(void *pvParameters)
 {
-    xTaskCreate((TaskFunction_t )led0_task,
-                (const char*    )"led0_task",
-                (uint16_t       )512,
-                (void*          )NULL,
-                (UBaseType_t    )tskIDLE_PRIORITY + 2,
-                (TaskHandle_t*  )&LED0Task_Handler);
+//    xTaskCreate((TaskFunction_t )led0_task,
+//                (const char*    )"led0_task",
+//                (uint16_t       )512,
+//                (void*          )NULL,
+//                (UBaseType_t    )tskIDLE_PRIORITY + 2,
+//                (TaskHandle_t*  )&LED0Task_Handler);
 
-    xTaskCreate((TaskFunction_t )led1_task,
-                (const char*    )"led1_task",
-                (uint16_t       )512,
-                (void*          )NULL,
-                (UBaseType_t    )tskIDLE_PRIORITY + 3,
-                (TaskHandle_t*  )&LED1Task_Handler);
+    LED0Task_Handler=xTaskCreateStatic((TaskFunction_t	)led0_task,
+										(const char* 	)"led0_task",
+										(uint32_t 		)LED0_STACK_SIZE,
+										(void* 		  	)NULL,
+										(UBaseType_t 	)tskIDLE_PRIORITY + 2,
+										(StackType_t*   )led0_stack,
+										(StaticTask_t*  )&led0_task_tcb);
+
+//    xTaskCreate((TaskFunction_t )led1_task,
+//                (const char*    )"led1_task",
+//                (uint16_t       )512,
+//                (void*          )NULL,
+//                (UBaseType_t    )tskIDLE_PRIORITY + 3,
+//                (TaskHandle_t*  )&LED1Task_Handler);
+    LED1Task_Handler=xTaskCreateStatic((TaskFunction_t	)led1_task,
+										(const char* 	)"led1_task",
+										(uint32_t 		)LED1_STACK_SIZE,
+										(void* 		  	)NULL,
+										(UBaseType_t 	)tskIDLE_PRIORITY + 3,
+										(StackType_t*   )led1_stack,
+										(StaticTask_t*  )&led1_task_tcb);
 
     xTaskCreate((TaskFunction_t )print_task,
                 (const char*    )"print_task",
@@ -260,7 +308,7 @@ void led0_task(void *pvParameters)
     {
     	vParTestToggleLED(0);
 //    	portDISABLE_INTERRUPTS();
-    	vTaskDelay(500 / portTICK_PERIOD_MS);
+    	vTaskDelay(100 / portTICK_PERIOD_MS);
 //    	portENABLE_INTERRUPTS();
     }
 }
