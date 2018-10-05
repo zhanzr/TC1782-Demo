@@ -142,13 +142,13 @@ static unsigned long ulRegisterTest2Count = 0;
 TaskHandle_t StartTask_Handler;
 void start_task(void *pvParameters);
 
-TaskHandle_t LED0Task_Handler;
+TaskHandle_t g_task0_handler;
 void led0_task(void *pvParameters);
 
-TaskHandle_t LED1Task_Handler;
+TaskHandle_t g_task1_handler;
 void led1_task(void *pvParameters);
 
-TaskHandle_t FLOATTask_Handler;
+TaskHandle_t g_info_task_handler;
 void print_task(void *pvParameters);
 
 int main(void)
@@ -236,21 +236,21 @@ void start_task(void *pvParameters)
                 (uint16_t       )512,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 2,
-                (TaskHandle_t*  )&LED0Task_Handler);
+                (TaskHandle_t*  )&g_task0_handler);
 
     xTaskCreate((TaskFunction_t )led1_task,
                 (const char*    )"led1_task",
                 (uint16_t       )512,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 3,
-                (TaskHandle_t*  )&LED1Task_Handler);
+                (TaskHandle_t*  )&g_task1_handler);
 
     xTaskCreate((TaskFunction_t )print_task,
                 (const char*    )"print_task",
                 (uint16_t       )512,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 4,
-                (TaskHandle_t*  )&FLOATTask_Handler);
+                (TaskHandle_t*  )&g_info_task_handler);
     vTaskDelete(StartTask_Handler);
 }
 
@@ -260,7 +260,7 @@ void led0_task(void *pvParameters)
     {
     	vParTestToggleLED(0);
 //    	portDISABLE_INTERRUPTS();
-    	vTaskDelay(500 / portTICK_PERIOD_MS);
+    	vTaskDelay(70 / portTICK_PERIOD_MS);
 //    	portENABLE_INTERRUPTS();
     }
 }
@@ -287,11 +287,18 @@ void led1_task(void *pvParameters)
 //    	portDISABLE_INTERRUPTS();
 //    	simple_delay(500);
 //    	portENABLE_INTERRUPTS();
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+        vTaskDelay(500 / portTICK_PERIOD_MS);
         tmp_num ++;
-        if(10==tmp_num)
+        if(0==tmp_num%10)
         {
-        	vTaskDelete(LED0Task_Handler);
+            if(0==tmp_num%20)
+            {
+            	vTaskSuspend(g_task0_handler);
+            }
+            else
+            {
+            	vTaskResume(g_task0_handler);
+            }
         }
     }
 }

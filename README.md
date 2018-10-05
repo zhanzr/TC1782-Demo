@@ -1,6 +1,6 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 3.
+FreeRTOS Example 5.
 
 Content:
-	Create and delete task.
+	Suspend and resume task state.
