@@ -279,6 +279,8 @@ void simple_delay(uint32_t t)
 
 void led1_task(void *pvParameters)
 {
+	uint32_t tmp_num = 0;
+
     while(1)
     {
         vParTestToggleLED(1);
@@ -286,6 +288,11 @@ void led1_task(void *pvParameters)
 //    	simple_delay(500);
 //    	portENABLE_INTERRUPTS();
         vTaskDelay(1000 / portTICK_PERIOD_MS);
+        tmp_num ++;
+        if(10==tmp_num)
+        {
+        	vTaskDelete(LED0Task_Handler);
+        }
     }
 }
 
