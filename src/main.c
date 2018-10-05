@@ -41,6 +41,7 @@
 
 volatile uint32_t g_ticks;
 volatile bool g_blink_flag;
+extern volatile uint64_t FreeRTOSRunTimeTicks;
 /*----------------------------------------------------------*/
 
 /* Constants for the ComTest tasks. */
@@ -333,29 +334,29 @@ void print_task(void *pvParameters)
 	printf("\r\n");
 
 	eTaskState TaskState;
-	char InfoBuffer[1024];
+	char info_buf[1024];
 
 	TaskState=eTaskGetState(g_info_task_handler);
-	memset(InfoBuffer,0,10);
+	memset(info_buf,0,10);
 	switch((int)TaskState)
 	{
 		case 0:
-			sprintf(InfoBuffer,"Running");
+			sprintf(info_buf,"Running");
 			break;
 		case 1:
-			sprintf(InfoBuffer,"Ready");
+			sprintf(info_buf,"Ready");
 			break;
 		case 2:
-			sprintf(InfoBuffer,"Suspend");
+			sprintf(info_buf,"Suspend");
 			break;
 		case 3:
-			sprintf(InfoBuffer,"Delete");
+			sprintf(info_buf,"Delete");
 			break;
 		case 4:
-			sprintf(InfoBuffer,"Invalid");
+			sprintf(info_buf,"Invalid");
 			break;
 	}
-	printf("%d,%s\r\n",TaskState,InfoBuffer);
+	printf("%d,%s\r\n",TaskState,info_buf);
 	printf("\r\n");
 
 	while(1)
@@ -367,10 +368,19 @@ void print_task(void *pvParameters)
 				__TRICORE_CORE__
 		);
 
-		vTaskList(InfoBuffer);
-		printf("%d\r\n", strlen(InfoBuffer));
-		printf("%s\r\n",InfoBuffer);
-	    vTaskDelay(2500 / portTICK_PERIOD_MS);
+		vTaskList(info_buf);
+		printf("TaskList Len:%d\r\n", strlen(info_buf));
+		printf("%s\r\n",info_buf);
+
+//		vTaskGetRunTimeStats(info_buf);
+//		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+//		printf("%s\r\n",info_buf);
+//
+//		uint64_t tmpU64 = GetFreeRTOSRunTimeTicks();
+//		printf("%016llx %llu\n", tmpU64, tmpU64);
+//		printf("%016llx %llu\n", FreeRTOSRunTimeTicks, FreeRTOSRunTimeTicks);
+
+	    vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
 

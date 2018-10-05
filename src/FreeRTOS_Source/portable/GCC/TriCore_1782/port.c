@@ -134,6 +134,7 @@ extern volatile uint32_t *pxCurrentTCB;
 
 /* Precalculate the compare match value at compile time. */
 static const uint32_t ulCompareMatchValue = ( configPERIPHERAL_CLOCK_HZ / configTICK_RATE_HZ );
+static const uint32_t ulStatCompareMatchValue = ( configPERIPHERAL_CLOCK_HZ / (10*configTICK_RATE_HZ) );
 
 /*-----------------------------------------------------------*/
 
@@ -284,6 +285,52 @@ uint32_t *pulLowerCSA = NULL;
 	return 0;
 }
 /*-----------------------------------------------------------*/
+volatile uint64_t FreeRTOSRunTimeTicks;
+
+uint64_t GetFreeRTOSRunTimeTicks(void)
+{
+	return FreeRTOSRunTimeTicks;
+}
+
+static void prvStatTickHandler(int iArg)
+{
+	++ FreeRTOSRunTimeTicks;
+
+	/* Clear the interrupt source. */
+	STM_ISRR.bits.CMP1IRR = 0x01UL;
+	STM_CMP1.reg += ulStatCompareMatchValue;
+}
+
+void ConfigureTimeForRunTimeStats(void)
+{
+	FreeRTOSRunTimeTicks=0;
+
+	/* Determine how many bits are used without changing other bits in the CMCON register. */
+	STM_CMCON.bits.MSIZE1 &= ~0x1fUL;
+	STM_CMCON.bits.MSIZE1 |= (0x1f - __CLZ( ulStatCompareMatchValue));
+
+	/* Take into account the current time so a tick doesn't happen immediately. */
+	STM_CMP1.reg = ulStatCompareMatchValue + STM_TIM0.reg;
+
+	if( 0 != _install_int_handler( configRUNTIME_STAT_INTERRUPT_PRIORITY, prvStatTickHandler, 0 ) )
+	{
+		/* Set-up the interrupt. */
+		STM_SRC1.bits.SRPN = configRUNTIME_STAT_INTERRUPT_PRIORITY;
+		STM_SRC1.bits.CLRR = 1UL;
+		STM_SRC1.bits.SRE = 1UL;
+
+		/* Enable the Interrupt. */
+		STM_ISRR.reg &= ~( 0x0CUL );
+		STM_ISRR.bits.CMP1IRR = 0x1UL;
+		STM_ISRR.reg &= ~( 0x0FUL );
+		STM_ICR.bits.CMP1EN = 0x1UL;
+	}
+	else
+	{
+		/* Failed to install the Tick Interrupt. */
+		configASSERT( ( ( volatile void * ) NULL ) );
+	}
+}
 
 static void prvSetupTimerInterrupt( void )
 {
@@ -291,16 +338,16 @@ static void prvSetupTimerInterrupt( void )
 	unlock_wdtcon();
 	{
 		/* Wait until access to Endint protected register is enabled. */
-		while( 0 != ( WDT_CON0.reg & 0x1UL ) );
-
+		while( 0 != ( WDT_CON0.bits.ENDINIT & 0x1UL ) )
+		{;}
 		/* RMC == 1 so STM Clock == FPI */
-		STM_CLC.reg = ( 1UL << 8 );
+		STM_CLC.bits.RMC = 1UL;
 	}
 	lock_wdtcon();
 
     /* Determine how many bits are used without changing other bits in the CMCON register. */
-	STM_CMCON.reg &= ~( 0x1fUL );
-	STM_CMCON.reg |= ( 0x1fUL - __CLZ( configPERIPHERAL_CLOCK_HZ / configTICK_RATE_HZ ) );
+	STM_CMCON.bits.MSIZE0 &= ~( 0x1fUL );
+	STM_CMCON.bits.MSIZE0 |= ( 0x1fUL - __CLZ( ulCompareMatchValue) );
 
 	/* Take into account the current time so a tick doesn't happen immediately. */
 	STM_CMP0.reg = ulCompareMatchValue + STM_TIM0.reg;
@@ -308,13 +355,15 @@ static void prvSetupTimerInterrupt( void )
 	if( 0 != _install_int_handler( configKERNEL_INTERRUPT_PRIORITY, prvSystemTickHandler, 0 ) )
 	{
 		/* Set-up the interrupt. */
-		STM_SRC0.reg = ( configKERNEL_INTERRUPT_PRIORITY | 0x00005000UL );
+		STM_SRC0.bits.SRPN = configKERNEL_INTERRUPT_PRIORITY;
+		STM_SRC0.bits.CLRR = 1UL;
+		STM_SRC0.bits.SRE = 1UL;
 
 		/* Enable the Interrupt. */
 		STM_ISRR.reg &= ~( 0x03UL );
-		STM_ISRR.reg |= 0x1UL;
+		STM_ISRR.bits.CMP0IRR = 0x1UL;
 		STM_ISRR.reg &= ~( 0x07UL );
-		STM_ICR.reg |= 0x1UL;
+		STM_ICR.bits.CMP0EN = 0x1UL;
 	}
 	else
 	{
@@ -336,7 +385,7 @@ int32_t lYieldRequired;
 	( void ) iArg;
 
 	/* Clear the interrupt source. */
-	STM_ISRR.reg = 1UL;
+	STM_ISRR.bits.CMP0IRR = 0x01UL;
 
 	/* Reload the Compare Match register for X ticks into the future.
 
