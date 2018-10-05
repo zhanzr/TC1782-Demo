@@ -1,6 +1,6 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 7.
+FreeRTOS Example 8.
 
 Content:
-	Time slice test.
+	Task Information Test.

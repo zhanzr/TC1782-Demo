@@ -233,21 +233,21 @@ void start_task(void *pvParameters)
 {
     xTaskCreate((TaskFunction_t )led0_task,
                 (const char*    )"led0_task",
-                (uint16_t       )256,
+                (uint16_t       )128,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 2,
                 (TaskHandle_t*  )&g_task0_handler);
 
     xTaskCreate((TaskFunction_t )led1_task,
                 (const char*    )"led1_task",
-                (uint16_t       )256,
+                (uint16_t       )128,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 2,
                 (TaskHandle_t*  )&g_task1_handler);
 
     xTaskCreate((TaskFunction_t )print_task,
                 (const char*    )"print_task",
-                (uint16_t       )512,
+                (uint16_t       )1024,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 4,
                 (TaskHandle_t*  )&g_info_task_handler);
@@ -259,22 +259,8 @@ void led0_task(void *pvParameters)
     while(1)
     {
     	vParTestToggleLED(0);
-//    	portDISABLE_INTERRUPTS();
     	vTaskDelay(500 / portTICK_PERIOD_MS);
-//    	portENABLE_INTERRUPTS();
     }
-}
-
-//Block Style Delay
-void simple_delay(uint32_t t)
-{
-	for(uint32_t i=0; i<10000; ++i)
-	{
-		for(uint32_t j=0; j<t; ++j)
-		{
-			_nop();
-		}
-	}
 }
 
 void led1_task(void *pvParameters)
@@ -282,15 +268,96 @@ void led1_task(void *pvParameters)
     while(1)
     {
         vParTestToggleLED(1);
-//    	portDISABLE_INTERRUPTS();
-//    	simple_delay(500);
-//    	portENABLE_INTERRUPTS();
         vTaskDelay(500 / portTICK_PERIOD_MS);
     }
 }
 
 void print_task(void *pvParameters)
 {
+	uint32_t TotalRunTime;
+	UBaseType_t ArraySize,x;
+	TaskStatus_t *StatusArray;
+
+	ArraySize=uxTaskGetNumberOfTasks();
+	StatusArray=pvPortMalloc(ArraySize*sizeof(TaskStatus_t));
+	if(StatusArray!=NULL)
+	{
+		ArraySize=uxTaskGetSystemState((TaskStatus_t* 	)StatusArray,
+									   (UBaseType_t		)ArraySize,
+								       (uint32_t*		)&TotalRunTime);
+		printf("TaskName\t\tPriority\t\tTaskNumber\t\t\r\n");
+		for(x=0;x<ArraySize;x++)
+		{
+			printf("%s\t\t%d\t\t\t%d\t\t\t\r\n",
+					StatusArray[x].pcTaskName,
+					(int)StatusArray[x].uxCurrentPriority,
+					(int)StatusArray[x].xTaskNumber);
+
+		}
+	}
+	vPortFree(StatusArray);
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+	printf("\r\n");
+
+	TaskStatus_t TaskStatus;
+
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+	printf("\r\n");
+
+	vTaskGetInfo((TaskHandle_t	)g_task0_handler,
+				 (TaskStatus_t*	)&TaskStatus,
+				 (BaseType_t	)pdTRUE,
+			     (eTaskState	)eInvalid);
+	printf("%s\r\n",TaskStatus.pcTaskName);
+	printf("%d\r\n",(int)TaskStatus.xTaskNumber);
+	printf("%d\r\n",TaskStatus.eCurrentState);
+	printf("%d\r\n",(int)TaskStatus.uxCurrentPriority);
+	printf("%d\r\n",(int)TaskStatus.uxBasePriority);
+	printf("%08X\r\n",(int)TaskStatus.pxStackBase);
+	printf("%d\r\n",TaskStatus.usStackHighWaterMark);
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+	printf("\r\n");
+
+	vTaskGetInfo((TaskHandle_t	)g_task1_handler,
+				 (TaskStatus_t*	)&TaskStatus,
+				 (BaseType_t	)pdTRUE,
+			     (eTaskState	)eInvalid);
+	printf("%s\r\n",TaskStatus.pcTaskName);
+	printf("%d\r\n",(int)TaskStatus.xTaskNumber);
+	printf("%d\r\n",TaskStatus.eCurrentState);
+	printf("%d\r\n",(int)TaskStatus.uxCurrentPriority);
+	printf("%d\r\n",(int)TaskStatus.uxBasePriority);
+	printf("%08X\r\n",(int)TaskStatus.pxStackBase);
+	printf("%d\r\n",TaskStatus.usStackHighWaterMark);
+    vTaskDelay(1500 / portTICK_PERIOD_MS);
+	printf("\r\n");
+
+	eTaskState TaskState;
+	char InfoBuffer[1024];
+
+	TaskState=eTaskGetState(g_info_task_handler);
+	memset(InfoBuffer,0,10);
+	switch((int)TaskState)
+	{
+		case 0:
+			sprintf(InfoBuffer,"Running");
+			break;
+		case 1:
+			sprintf(InfoBuffer,"Ready");
+			break;
+		case 2:
+			sprintf(InfoBuffer,"Suspend");
+			break;
+		case 3:
+			sprintf(InfoBuffer,"Delete");
+			break;
+		case 4:
+			sprintf(InfoBuffer,"Invalid");
+			break;
+	}
+	printf("%d,%s\r\n",TaskState,InfoBuffer);
+	printf("\r\n");
+
 	while(1)
 	{
 		printf("FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
@@ -300,10 +367,10 @@ void print_task(void *pvParameters)
 				__TRICORE_CORE__
 		);
 
-//    	portDISABLE_INTERRUPTS();
-//    	simple_delay(500);
-//    	portENABLE_INTERRUPTS();
-        vTaskDelay(1000 / portTICK_PERIOD_MS);
+		vTaskList(InfoBuffer);
+		printf("%d\r\n", strlen(InfoBuffer));
+		printf("%s\r\n",InfoBuffer);
+	    vTaskDelay(2500 / portTICK_PERIOD_MS);
 	}
 }
 
