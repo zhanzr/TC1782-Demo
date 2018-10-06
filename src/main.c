@@ -281,11 +281,11 @@ void OneShotCallback(TimerHandle_t xTimer)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-					printf("%s,TaskList Len:%d\r\n",
-							pcTaskGetName(NULL),
-							strlen(info_buf));
-					printf("%s\r\n",info_buf);
-					flush_stdout();
+//					printf("%s,TaskList Len:%d\r\n",
+//							pcTaskGetName(NULL),
+//							strlen(info_buf));
+//					printf("%s\r\n",info_buf);
+//					flush_stdout();
 
 					xSemaphoreGive(MutexSemaphore);
 				}
@@ -365,9 +365,9 @@ void led0_task(void *pvParameters)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-					printf("<%s,ev:%08X\n",
-							pcTaskGetName(NULL),
-							(uint32_t)EventValue);
+//					printf("<%s,ev:%08X\n",
+//							pcTaskGetName(NULL),
+//							(uint32_t)EventValue);
 					xSemaphoreGive(MutexSemaphore);
 				}
 			}
@@ -383,9 +383,9 @@ void led0_task(void *pvParameters)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-					printf(">%s,ev:%08X\n",
-							pcTaskGetName(NULL),
-							(uint32_t)EventValue);
+//					printf(">%s,ev:%08X\n",
+//							pcTaskGetName(NULL),
+//							(uint32_t)EventValue);
 					xSemaphoreGive(MutexSemaphore);
 				}
 			}
@@ -400,11 +400,11 @@ void led0_task(void *pvParameters)
 				{
 					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 					{
-						printf("%s,TaskList Len:%d\r\n",
-								pcTaskGetName(NULL),
-								strlen(info_buf));
-						printf("%s\r\n",info_buf);
-						flush_stdout();
+//						printf("%s,TaskList Len:%d\r\n",
+//								pcTaskGetName(NULL),
+//								strlen(info_buf));
+//						printf("%s\r\n",info_buf);
+//						flush_stdout();
 
 						xSemaphoreGive(MutexSemaphore);
 					}
@@ -432,9 +432,9 @@ void led1_task(void *pvParameters)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-					printf("<%s,ev:%08X\n",
-							pcTaskGetName(NULL),
-							(uint32_t)EventValue);
+//					printf("<%s,ev:%08X\n",
+//							pcTaskGetName(NULL),
+//							(uint32_t)EventValue);
 					xSemaphoreGive(MutexSemaphore);
 				}
 			}
@@ -450,9 +450,9 @@ void led1_task(void *pvParameters)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-					printf(">%s,ev:%08X\n",
-							pcTaskGetName(NULL),
-							(uint32_t)EventValue);
+//					printf(">%s,ev:%08X\n",
+//							pcTaskGetName(NULL),
+//							(uint32_t)EventValue);
 					xSemaphoreGive(MutexSemaphore);
 				}
 			}
@@ -473,11 +473,11 @@ void led1_task(void *pvParameters)
 				{
 					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 					{
-						printf("%s,TaskList Len:%d\r\n",
-								pcTaskGetName(NULL),
-								strlen(info_buf));
-						printf("%s\r\n",info_buf);
-						flush_stdout();
+//						printf("%s,TaskList Len:%d\r\n",
+//								pcTaskGetName(NULL),
+//								strlen(info_buf));
+//						printf("%s\r\n",info_buf);
+//						flush_stdout();
 
 						xSemaphoreGive(MutexSemaphore);
 					}
@@ -535,6 +535,20 @@ void print_task(void *pvParameters)
 						printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
 						printf("%s\r\n",info_buf);
 						flush_stdout();
+
+						uint8_t* buffer;
+						uint32_t tmpA, tmpB, tmpC, tmpD;
+						tmpA = xPortGetFreeHeapSize();
+						buffer = pvPortMalloc(1024);
+						tmpB = xPortGetFreeHeapSize();
+						if(buffer!=NULL)
+						{
+							vPortFree(buffer);
+							tmpC = xPortGetFreeHeapSize();
+							buffer = NULL;
+						}
+
+						printf("FreeMem3:\t %u %u %u\n", tmpA, tmpB, tmpC);
 
 						xSemaphoreGive(MutexSemaphore);
 					}
