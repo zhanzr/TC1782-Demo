@@ -54,6 +54,8 @@ volatile bool g_blink_flag;
 QueueHandle_t Message_Queue;
 
 SemaphoreHandle_t BinarySemaphore;
+
+SemaphoreHandle_t CountSemaphore;
 /*----------------------------------------------------------*/
 
 /* Constants for the ComTest tasks. */
@@ -253,6 +255,8 @@ void start_task(void *pvParameters)
 	BinarySemaphore = xSemaphoreCreateBinary();
     xSemaphoreGive(BinarySemaphore);
 
+	CountSemaphore = xSemaphoreCreateCounting(2, 2);
+
     xTaskCreate((TaskFunction_t )led0_task,
                 (const char*    )"led0_task",
                 (uint16_t       )64,
@@ -297,13 +301,22 @@ void led1_task(void *pvParameters)
         	xQueueSend(Message_Queue, &tmpTicks, 0);
         }
 
-        if(NULL != BinarySemaphore)
+//        if(NULL != BinarySemaphore)
+//        {
+//        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+//        	{
+//                vParTestToggleLED(1);
+//
+//                xSemaphoreGive(BinarySemaphore);
+//        	}
+//        }
+        if(NULL != CountSemaphore)
         {
-        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+        	if(pdTRUE == xSemaphoreTake(CountSemaphore, portMAX_DELAY))
         	{
                 vParTestToggleLED(1);
 
-                xSemaphoreGive(BinarySemaphore);
+                xSemaphoreGive(CountSemaphore);
         	}
         }
     }
@@ -334,9 +347,25 @@ void print_task(void *pvParameters)
 		    vTaskDelay(1000 / portTICK_PERIOD_MS);
 		}
 
-        if(NULL != BinarySemaphore)
+//        if(NULL != BinarySemaphore)
+//        {
+//        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+//        	{
+//        		vTaskList(info_buf);
+//        		printf("TaskList Len:%d\r\n", strlen(info_buf));
+//        		printf("%s\r\n",info_buf);
+//
+//        		vTaskGetRunTimeStats(info_buf);
+//        		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+//        		printf("%s\r\n",info_buf);
+//
+//                xSemaphoreGive(BinarySemaphore);
+//        	}
+//        }
+
+        if(NULL != CountSemaphore)
         {
-        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+        	if(pdTRUE == xSemaphoreTake(CountSemaphore, portMAX_DELAY))
         	{
         		vTaskList(info_buf);
         		printf("TaskList Len:%d\r\n", strlen(info_buf));
@@ -346,7 +375,11 @@ void print_task(void *pvParameters)
         		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
         		printf("%s\r\n",info_buf);
 
-                xSemaphoreGive(BinarySemaphore);
+        		uint32_t tmp_sema_cnt = uxSemaphoreGetCount(CountSemaphore);
+        		printf("SemaCnt %08X: %d\n", (uint32_t)&CountSemaphore, tmp_sema_cnt);
+                xSemaphoreGive(CountSemaphore);
+                tmp_sema_cnt = uxSemaphoreGetCount(CountSemaphore);
+        		printf("SemaCnt %08X: %d\n", (uint32_t)&CountSemaphore, tmp_sema_cnt);
         	}
         }
 
