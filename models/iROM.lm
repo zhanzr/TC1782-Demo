@@ -130,6 +130,7 @@
     <ObjectFile Name="src\ThirdPartyCode\cpufreq.o"/>
     <ObjectFile Name="src\serial.o"/>
     <ObjectFile Name="src\FreeRTOS_Source\portable\MemMang\heap_4.o"/>
+    <ObjectFile Name="src\FreeRTOS_Source\event_groups.o"/>
   </Files>
   <LocalAliases>
     <Alias Description="Alias for RAM" Name="DATA" Region="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>

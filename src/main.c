@@ -1,10 +1,3 @@
-/*====================================================================
- * Project:  Board Support Package (BSP) examples
- * Function: example using a serial line (polling mode)
- *
- * Copyright HighTec EDV-Systeme GmbH 1982-2015
- *====================================================================*/
-
 #include <stdio.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -20,6 +13,7 @@
 #include "queue.h"
 #include "semphr.h"
 #include "timers.h"
+#include "event_groups.h"
 
 /* Demo application includes. */
 #include "partest.h"
@@ -62,6 +56,12 @@ SemaphoreHandle_t MutexSemaphore;
 
 TimerHandle_t 	AutoReloadTimer_Handle;
 TimerHandle_t	OneShotTimer_Handle;
+
+EventGroupHandle_t EventGroupHandler;
+#define EVENTBIT_0	(1<<0)
+#define EVENTBIT_1	(1<<1)
+#define EVENTBIT_2	(1<<2)
+#define EVENTBIT_ALL	(EVENTBIT_0|EVENTBIT_1|EVENTBIT_2)
 /*----------------------------------------------------------*/
 
 /* Constants for the ComTest tasks. */
@@ -221,28 +221,28 @@ int main(void)
 
 	while(1)
 	{
-		//		c = _in_uart();
-		/* check flag set by timer ISR in every 100 ms */
-
-		if(g_blink_flag)
-		{
-			printf("Failed. @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
-					get_fpi_frequency(),
-					get_cpu_frequency(),
-					g_ticks,
-					__TRICORE_CORE__
-			);
-
-			LEDTOGGLE(0);
-			LEDTOGGLE(1);
-			//			LEDTOGGLE(2);
-			//			LEDTOGGLE(3);
-			//			LEDTOGGLE(4);
-			//			LEDTOGGLE(5);
-			//			LEDTOGGLE(6);
-			//			LEDTOGGLE(7);
-			g_blink_flag = false;
-		}
+//		//		c = _in_uart();
+//		/* check flag set by timer ISR in every 100 ms */
+//
+//		if(g_blink_flag)
+//		{
+//			printf("Failed. @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
+//					get_fpi_frequency(),
+//					get_cpu_frequency(),
+//					g_ticks,
+//					__TRICORE_CORE__
+//			);
+//
+//			LEDTOGGLE(0);
+//			LEDTOGGLE(1);
+//			//			LEDTOGGLE(2);
+//			//			LEDTOGGLE(3);
+//			//			LEDTOGGLE(4);
+//			//			LEDTOGGLE(5);
+//			//			LEDTOGGLE(6);
+//			//			LEDTOGGLE(7);
+//			g_blink_flag = false;
+//		}
 	}
 	return EXIT_SUCCESS;
 }
@@ -253,6 +253,11 @@ void AutoReloadCallback(TimerHandle_t xTimer)
 	{
 		xTimerStart(OneShotTimer_Handle,0);
 	}
+
+	if(EventGroupHandler!=NULL)
+	{
+		xEventGroupSetBits(EventGroupHandler,EVENTBIT_1);
+	}
 }
 
 void OneShotCallback(TimerHandle_t xTimer)
@@ -261,6 +266,11 @@ void OneShotCallback(TimerHandle_t xTimer)
 
 	vParTestToggleLED(0);
 	vParTestToggleLED(1);
+
+	if(EventGroupHandler!=NULL)
+	{
+		xEventGroupSetBits(EventGroupHandler,EVENTBIT_0);
+	}
 
 	if(NULL != BinarySemaphore)
 	{
@@ -309,6 +319,8 @@ void start_task(void *pvParameters)
 			(void*					)2,
 			(TimerCallbackFunction_t)OneShotCallback);
 
+	EventGroupHandler = xEventGroupCreate();
+
 	if(NULL != AutoReloadTimer_Handle)
 	{
 		xTimerStart(AutoReloadTimer_Handle,0);
@@ -340,11 +352,44 @@ void start_task(void *pvParameters)
 void led0_task(void *pvParameters)
 {
 	char info_buf[512];
+	EventBits_t EventValue;
 
 	while(1)
 	{
 		//    	vParTestToggleLED(0);
-		vTaskDelay(4000 / portTICK_PERIOD_MS);
+//		vTaskDelay(4000 / portTICK_PERIOD_MS);
+		if(EventGroupHandler!=NULL)
+		{
+			EventValue = xEventGroupGetBits(EventGroupHandler);
+			if(NULL != MutexSemaphore)
+			{
+				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+				{
+					printf("<%s,ev:%08X\n",
+							pcTaskGetName(NULL),
+							(uint32_t)EventValue);
+					xSemaphoreGive(MutexSemaphore);
+				}
+			}
+
+			EventValue = xEventGroupWaitBits((EventGroupHandle_t	)EventGroupHandler,
+					(EventBits_t			)EVENTBIT_0,
+					(BaseType_t			)pdTRUE,
+					(BaseType_t			)pdTRUE,
+					(TickType_t			)portMAX_DELAY);
+
+			EventValue = xEventGroupGetBits(EventGroupHandler);
+			if(NULL != MutexSemaphore)
+			{
+				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+				{
+					printf(">%s,ev:%08X\n",
+							pcTaskGetName(NULL),
+							(uint32_t)EventValue);
+					xSemaphoreGive(MutexSemaphore);
+				}
+			}
+		}
 
 		if(NULL != BinarySemaphore)
 		{
@@ -374,11 +419,44 @@ void led0_task(void *pvParameters)
 void led1_task(void *pvParameters)
 {
 	char info_buf[512];
+	EventBits_t EventValue;
 
 	while(1)
 	{
 		//    	vParTestToggleLED(1);
-		vTaskDelay(4000 / portTICK_PERIOD_MS);
+//		vTaskDelay(4000 / portTICK_PERIOD_MS);
+		if(EventGroupHandler!=NULL)
+		{
+			EventValue = xEventGroupGetBits(EventGroupHandler);
+			if(NULL != MutexSemaphore)
+			{
+				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+				{
+					printf("<%s,ev:%08X\n",
+							pcTaskGetName(NULL),
+							(uint32_t)EventValue);
+					xSemaphoreGive(MutexSemaphore);
+				}
+			}
+
+			EventValue = xEventGroupWaitBits((EventGroupHandle_t	)EventGroupHandler,
+					(EventBits_t			)EVENTBIT_1,
+					(BaseType_t			)pdTRUE,
+					(BaseType_t			)pdTRUE,
+					(TickType_t			)portMAX_DELAY);
+
+			EventValue = xEventGroupGetBits(EventGroupHandler);
+			if(NULL != MutexSemaphore)
+			{
+				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+				{
+					printf(">%s,ev:%08X\n",
+							pcTaskGetName(NULL),
+							(uint32_t)EventValue);
+					xSemaphoreGive(MutexSemaphore);
+				}
+			}
+		}
 
 		if(NULL != Message_Queue)
 		{
