@@ -18,6 +18,7 @@
 #include "task.h"
 #include "croutine.h"
 #include "queue.h"
+#include "semphr.h"
 
 /* Demo application includes. */
 #include "partest.h"
@@ -51,6 +52,8 @@ volatile bool g_blink_flag;
 
 #define MESSAGE_Q_NUM   2
 QueueHandle_t Message_Queue;
+
+SemaphoreHandle_t BinarySemaphore;
 /*----------------------------------------------------------*/
 
 /* Constants for the ComTest tasks. */
@@ -247,6 +250,9 @@ void start_task(void *pvParameters)
 {
 	Message_Queue = xQueueCreate(MESSAGE_Q_NUM, sizeof(uint32_t));
 
+	BinarySemaphore = xSemaphoreCreateBinary();
+    xSemaphoreGive(BinarySemaphore);
+
     xTaskCreate((TaskFunction_t )led0_task,
                 (const char*    )"led0_task",
                 (uint16_t       )64,
@@ -283,13 +289,22 @@ void led1_task(void *pvParameters)
 {
     while(1)
     {
-        vParTestToggleLED(1);
         vTaskDelay(2000 / portTICK_PERIOD_MS);
 
         if(NULL != Message_Queue)
         {
         	uint32_t tmpTicks = xTaskGetTickCount();
         	xQueueSend(Message_Queue, &tmpTicks, 0);
+        }
+
+        if(NULL != BinarySemaphore)
+        {
+        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+        	{
+                vParTestToggleLED(1);
+
+                xSemaphoreGive(BinarySemaphore);
+        	}
         }
     }
 }
@@ -305,7 +320,7 @@ void print_task(void *pvParameters)
 			uint32_t tmpU32;
 			if(xQueueReceive(Message_Queue, &tmpU32, portMAX_DELAY))
 			{
-				printf("%p\n", (uint32_t)&Message_Queue);
+				printf("%08X\n", (uint32_t)&Message_Queue);
 				printf("CPU:%u Hz %u %u\n",
 						get_cpu_frequency(),
 						xTaskGetTickCount(),
@@ -315,13 +330,25 @@ void print_task(void *pvParameters)
 		}
 		else
 		{
-			printf("%p\n", (uint32_t)&Message_Queue);
+			printf("%08X\n", (uint32_t)&Message_Queue);
 		    vTaskDelay(1000 / portTICK_PERIOD_MS);
 		}
 
-		vTaskList(info_buf);
-		printf("TaskList Len:%d\r\n", strlen(info_buf));
-		printf("%s\r\n",info_buf);
+        if(NULL != BinarySemaphore)
+        {
+        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+        	{
+        		vTaskList(info_buf);
+        		printf("TaskList Len:%d\r\n", strlen(info_buf));
+        		printf("%s\r\n",info_buf);
+
+        		vTaskGetRunTimeStats(info_buf);
+        		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+        		printf("%s\r\n",info_buf);
+
+                xSemaphoreGive(BinarySemaphore);
+        	}
+        }
 
 //		printf("STM_CLC\t%08X\t:%08X\n\n", &STM_CLC, STM_CLC.reg);
 //		printf("STM_ID\t%08X\t:%08X\n\n", &STM_ID, STM_ID.reg);
@@ -340,10 +367,6 @@ void print_task(void *pvParameters)
 //		printf("STM_ISRR\t%08X\t:%08X\n\n", &STM_ISRR, STM_ISRR.reg);
 //		printf("STM_SRC1\t%08X\t:%08X\n\n", &STM_SRC1, STM_SRC1.reg);
 //		printf("STM_SRC0\t%08X\t:%08X\n\n", &STM_SRC0, STM_SRC0.reg);
-
-		vTaskGetRunTimeStats(info_buf);
-		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
-		printf("%s\r\n",info_buf);
 	}
 }
 
