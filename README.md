@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 9.
+FreeRTOS Example 10.
 
 Content:
-        Task Run time stat.
+        Queue API test.
 
 

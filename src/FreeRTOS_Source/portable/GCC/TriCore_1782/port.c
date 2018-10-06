@@ -299,7 +299,7 @@ static void prvSetupTimerInterrupt( void )
 
 	/* Determine how many bits are used without changing other bits in the CMCON register. */
 	STM_CMCON.bits.MSIZE0 &= ~( 0x1fUL );
-	STM_CMCON.bits.MSIZE0 |= ( 0x1fUL - __CLZ( CMP0_MATCH_VAL) );
+	STM_CMCON.bits.MSIZE0 |= ( 0x1fUL - __builtin_clz( CMP0_MATCH_VAL) );
 
 	/* Take into account the current time so a tick doesn't happen immediately. */
 	STM_CMP0.reg = CMP0_MATCH_VAL + STM_TIM0.reg;
@@ -316,6 +316,7 @@ static void prvSetupTimerInterrupt( void )
 		STM_ISRR.bits.CMP0IRR = 0x1UL;
 		STM_ICR.reg &= ~( 0x07UL );
 		STM_ICR.bits.CMP0EN = 0x1UL;
+		STM_ICR.bits.CMP0OS = 0;
 	}
 	else
 	{
@@ -334,7 +335,7 @@ static void prvSystemTickHandler( int iArg )
 	int32_t lYieldRequired;
 
 	/* Clear the interrupt source. */
-	STM_ISRR.bits.CMP0IRR = 0x01UL;
+	STM_ISRR.bits.CMP0IRR = 1;
 
 	/* Reload the Compare Match register for X ticks into the future.
 

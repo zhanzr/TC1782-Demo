@@ -54,7 +54,7 @@ void ConfigureTimeForRunTimeStats(void)
 	{
 		/* Determine how many bits are used without changing other bits in the CMCON register. */
 		STM_CMCON.bits.MSIZE1 &= ~0x1fUL;
-		STM_CMCON.bits.MSIZE1 |= (0x1f - __CLZ( CMP1_MATCH_VAL));
+		STM_CMCON.bits.MSIZE1 |= (0x1f - __builtin_clz( CMP1_MATCH_VAL));
 		/* Take into account the current time so a tick doesn't happen immediately. */
 		STM_CMP1.reg = CMP1_MATCH_VAL + STM_TIM0.reg;
 

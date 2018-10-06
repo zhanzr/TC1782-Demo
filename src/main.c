@@ -17,6 +17,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "croutine.h"
+#include "queue.h"
 
 /* Demo application includes. */
 #include "partest.h"
@@ -47,7 +48,9 @@
 
 volatile uint32_t g_ticks;
 volatile bool g_blink_flag;
-extern volatile uint64_t FreeRTOSRunTimeTicks;
+
+#define MESSAGE_Q_NUM   2
+QueueHandle_t Message_Queue;
 /*----------------------------------------------------------*/
 
 /* Constants for the ComTest tasks. */
@@ -242,9 +245,11 @@ int main(void)
 /*-----------------------------------------------------------*/
 void start_task(void *pvParameters)
 {
+	Message_Queue = xQueueCreate(MESSAGE_Q_NUM, sizeof(uint32_t));
+
     xTaskCreate((TaskFunction_t )led0_task,
                 (const char*    )"led0_task",
-                (uint16_t       )128,
+                (uint16_t       )64,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 2,
                 (TaskHandle_t*  )&g_task0_handler);
@@ -279,111 +284,45 @@ void led1_task(void *pvParameters)
     while(1)
     {
         vParTestToggleLED(1);
-        vTaskDelay(500 / portTICK_PERIOD_MS);
+        vTaskDelay(2000 / portTICK_PERIOD_MS);
+
+        if(NULL != Message_Queue)
+        {
+        	uint32_t tmpTicks = xTaskGetTickCount();
+        	xQueueSend(Message_Queue, &tmpTicks, 0);
+        }
     }
 }
 
 void print_task(void *pvParameters)
 {
-	uint32_t TotalRunTime;
-	UBaseType_t ArraySize,x;
-	TaskStatus_t *StatusArray;
-	eTaskState TaskState;
 	char info_buf[1024];
-
-//	ArraySize=uxTaskGetNumberOfTasks();
-//	StatusArray=pvPortMalloc(ArraySize*sizeof(TaskStatus_t));
-//	if(StatusArray!=NULL)
-//	{
-//		ArraySize=uxTaskGetSystemState((TaskStatus_t* 	)StatusArray,
-//									   (UBaseType_t		)ArraySize,
-//								       (uint32_t*		)&TotalRunTime);
-//		printf("TaskName\t\tPriority\t\tTaskNumber\t\t\r\n");
-//		for(x=0;x<ArraySize;x++)
-//		{
-//			printf("%s\t\t%d\t\t\t%d\t\t\t\r\n",
-//					StatusArray[x].pcTaskName,
-//					(int)StatusArray[x].uxCurrentPriority,
-//					(int)StatusArray[x].xTaskNumber);
-//
-//		}
-//	}
-//	vPortFree(StatusArray);
-//    vTaskDelay(1500 / portTICK_PERIOD_MS);
-//	printf("\r\n");
-//
-//	TaskStatus_t TaskStatus;
-//
-//    vTaskDelay(1500 / portTICK_PERIOD_MS);
-//	printf("\r\n");
-//
-//	vTaskGetInfo((TaskHandle_t	)g_task0_handler,
-//				 (TaskStatus_t*	)&TaskStatus,
-//				 (BaseType_t	)pdTRUE,
-//			     (eTaskState	)eInvalid);
-//	printf("%s\r\n",TaskStatus.pcTaskName);
-//	printf("%d\r\n",(int)TaskStatus.xTaskNumber);
-//	printf("%d\r\n",TaskStatus.eCurrentState);
-//	printf("%d\r\n",(int)TaskStatus.uxCurrentPriority);
-//	printf("%d\r\n",(int)TaskStatus.uxBasePriority);
-//	printf("%08X\r\n",(int)TaskStatus.pxStackBase);
-//	printf("%d\r\n",TaskStatus.usStackHighWaterMark);
-//    vTaskDelay(1500 / portTICK_PERIOD_MS);
-//	printf("\r\n");
-//
-//	vTaskGetInfo((TaskHandle_t	)g_task1_handler,
-//				 (TaskStatus_t*	)&TaskStatus,
-//				 (BaseType_t	)pdTRUE,
-//			     (eTaskState	)eInvalid);
-//	printf("%s\r\n",TaskStatus.pcTaskName);
-//	printf("%d\r\n",(int)TaskStatus.xTaskNumber);
-//	printf("%d\r\n",TaskStatus.eCurrentState);
-//	printf("%d\r\n",(int)TaskStatus.uxCurrentPriority);
-//	printf("%d\r\n",(int)TaskStatus.uxBasePriority);
-//	printf("%08X\r\n",(int)TaskStatus.pxStackBase);
-//	printf("%d\r\n",TaskStatus.usStackHighWaterMark);
-//    vTaskDelay(1500 / portTICK_PERIOD_MS);
-//	printf("\r\n");
-//
-//
-//	TaskState=eTaskGetState(g_info_task_handler);
-//	memset(info_buf,0,10);
-//	switch((int)TaskState)
-//	{
-//		case 0:
-//			sprintf(info_buf,"Running");
-//			break;
-//		case 1:
-//			sprintf(info_buf,"Ready");
-//			break;
-//		case 2:
-//			sprintf(info_buf,"Suspend");
-//			break;
-//		case 3:
-//			sprintf(info_buf,"Delete");
-//			break;
-//		case 4:
-//			sprintf(info_buf,"Invalid");
-//			break;
-//	}
-//	printf("%d,%s\r\n",TaskState,info_buf);
-//	printf("\r\n");
 
 	while(1)
 	{
-		printf("FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
-				get_fpi_frequency(),
-				get_cpu_frequency(),
-				xTaskGetTickCount(),
-				__TRICORE_CORE__
-		);
+		if(NULL != Message_Queue)
+		{
+			uint32_t tmpU32;
+			if(xQueueReceive(Message_Queue, &tmpU32, portMAX_DELAY))
+			{
+				printf("%p\n", (uint32_t)&Message_Queue);
+				printf("CPU:%u Hz %u %u\n",
+						get_cpu_frequency(),
+						xTaskGetTickCount(),
+						tmpU32
+				);
+			}
+		}
+		else
+		{
+			printf("%p\n", (uint32_t)&Message_Queue);
+		    vTaskDelay(1000 / portTICK_PERIOD_MS);
+		}
 
 		vTaskList(info_buf);
 		printf("TaskList Len:%d\r\n", strlen(info_buf));
 		printf("%s\r\n",info_buf);
 
-		printf("TickCMP1:%llu\n",
-				GetFreeRTOSRunTimeTicks());
 //		printf("STM_CLC\t%08X\t:%08X\n\n", &STM_CLC, STM_CLC.reg);
 //		printf("STM_ID\t%08X\t:%08X\n\n", &STM_ID, STM_ID.reg);
 //		printf("STM_TIM0\t%08X\t:%08X\n\n", &STM_TIM0, STM_TIM0.reg);
@@ -405,8 +344,6 @@ void print_task(void *pvParameters)
 		vTaskGetRunTimeStats(info_buf);
 		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
 		printf("%s\r\n",info_buf);
-
-	    vTaskDelay(1000 / portTICK_PERIOD_MS);
 	}
 }
 
