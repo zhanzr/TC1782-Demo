@@ -146,12 +146,3 @@ size_t write(int fd, const void *buffer, size_t count)
 
 	return index;
 }
-
-void SimpleDelay(uint32_t d)
-{
-	uint32_t t = d*2000;
-	while(--t)
-	{
-		;
-	}
-}

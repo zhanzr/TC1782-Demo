@@ -56,6 +56,8 @@ QueueHandle_t Message_Queue;
 SemaphoreHandle_t BinarySemaphore;
 
 SemaphoreHandle_t CountSemaphore;
+
+SemaphoreHandle_t MutexSemaphore;
 /*----------------------------------------------------------*/
 
 /* Constants for the ComTest tasks. */
@@ -142,18 +144,6 @@ static unsigned long ulRegisterTest2Count = 0;
 
 /*-----------------------------------------------------------*/
 
-
-///* timer callback handler */
-//static void my_timer_handler(void)
-//{
-//	++g_ticks;
-//
-//	if (0 == g_ticks%(2*configTICK_RATE_HZ))
-//	{
-//		g_blink_flag = true;
-//	}
-//}
-
 TaskHandle_t StartTask_Handler;
 void start_task(void *pvParameters);
 
@@ -166,7 +156,32 @@ void led1_task(void *pvParameters);
 TaskHandle_t g_info_task_handler;
 void print_task(void *pvParameters);
 
-int g_cmp1_ret;
+int mutex_printf(char const *fmt, ...)
+{
+	if(NULL != MutexSemaphore)
+	{
+		int ret;
+
+		xSemaphoreTake(MutexSemaphore,portMAX_DELAY);
+
+		char buffer[1024];
+		va_list ap;
+
+		va_start(ap, fmt);
+		vsprintf(buffer, fmt, ap);
+		va_end(ap);
+
+		ret = printf(buffer);
+
+		xSemaphoreGive(MutexSemaphore);
+
+		return ret;
+	}
+	else
+	{
+		return 0;
+	}
+}
 
 int main(void)
 {
@@ -262,43 +277,64 @@ void start_task(void *pvParameters)
 
 	CountSemaphore = xSemaphoreCreateCounting(2, 2);
 
+	MutexSemaphore = xSemaphoreCreateMutex();
+
     xTaskCreate((TaskFunction_t )led0_task,
                 (const char*    )"led0_task",
-                (uint16_t       )64,
+                (uint16_t       )768,
                 (void*          )NULL,
-                (UBaseType_t    )tskIDLE_PRIORITY + 3,
+                (UBaseType_t    )tskIDLE_PRIORITY + 2,
                 (TaskHandle_t*  )&g_task0_handler);
 
     xTaskCreate((TaskFunction_t )led1_task,
                 (const char*    )"led1_task",
-                (uint16_t       )128,
+                (uint16_t       )768,
                 (void*          )NULL,
                 (UBaseType_t    )tskIDLE_PRIORITY + 2,
                 (TaskHandle_t*  )&g_task1_handler);
 
     xTaskCreate((TaskFunction_t )print_task,
                 (const char*    )"print_task",
-                (uint16_t       )1024,
+                (uint16_t       )768,
                 (void*          )NULL,
-                (UBaseType_t    )tskIDLE_PRIORITY + 12,
+                (UBaseType_t    )tskIDLE_PRIORITY + 2,
                 (TaskHandle_t*  )&g_info_task_handler);
     vTaskDelete(StartTask_Handler);
 }
 
 void led0_task(void *pvParameters)
 {
+	char info_buf[512];
+
     while(1)
     {
     	vParTestToggleLED(0);
-    	vTaskDelay(500 / portTICK_PERIOD_MS);
+    	vTaskDelay(4000 / portTICK_PERIOD_MS);
+
+        if(NULL != BinarySemaphore)
+        {
+        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+        	{
+        		vTaskList(info_buf);
+        		mutex_printf("Task:%s, TaskList Len:%d\r\n",
+        				pcTaskGetName(NULL),
+						strlen(info_buf));
+        		mutex_printf("%s\r\n",info_buf);
+
+                xSemaphoreGive(BinarySemaphore);
+        	}
+        }
     }
 }
 
 void led1_task(void *pvParameters)
 {
+	char info_buf[512];
+
     while(1)
     {
-        vTaskDelay(2000 / portTICK_PERIOD_MS);
+    	vParTestToggleLED(1);
+    	vTaskDelay(4000 / portTICK_PERIOD_MS);
 
         if(NULL != Message_Queue)
         {
@@ -310,64 +346,58 @@ void led1_task(void *pvParameters)
         {
         	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
         	{
-        		vTaskDelay(200 / portTICK_PERIOD_MS);
-        		vParTestToggleLED(1);
-        		for(uint32_t i=0; i<500000; i++)
-        		{
-        			taskYIELD();
-        		}
+        		vTaskList(info_buf);
+        		mutex_printf("Task:%s, TaskList Len:%d\r\n",
+        				pcTaskGetName(NULL),
+						strlen(info_buf));
+        		mutex_printf("%s\r\n",info_buf);
 
                 xSemaphoreGive(BinarySemaphore);
         	}
         }
-//        if(NULL != CountSemaphore)
-//        {
-//        	if(pdTRUE == xSemaphoreTake(CountSemaphore, portMAX_DELAY))
-//        	{
-//                vParTestToggleLED(1);
-//
-//                xSemaphoreGive(CountSemaphore);
-//        	}
-//        }
+
     }
 }
 
 void print_task(void *pvParameters)
 {
-	char info_buf[1024];
+	char info_buf[512];
 
 	while(1)
 	{
-		if(NULL != Message_Queue)
-		{
-			uint32_t tmpU32;
-			if(xQueueReceive(Message_Queue, &tmpU32, portMAX_DELAY))
-			{
-				printf("%08X\n", (uint32_t)&Message_Queue);
-				printf("CPU:%u Hz %u %u\n",
-						get_cpu_frequency(),
-						xTaskGetTickCount(),
-						tmpU32
-				);
-			}
-		}
-		else
-		{
-			printf("%08X\n", (uint32_t)&Message_Queue);
-		    vTaskDelay(1000 / portTICK_PERIOD_MS);
-		}
+    	vTaskDelay(4000 / portTICK_PERIOD_MS);
+//		if(NULL != Message_Queue)
+//		{
+//			uint32_t tmpU32;
+//			if(xQueueReceive(Message_Queue, &tmpU32, portMAX_DELAY))
+//			{
+//				mutex_printf("%08X\n", (uint32_t)&Message_Queue);
+//				mutex_printf("CPU:%u Hz %u %u\n",
+//						get_cpu_frequency(),
+//						xTaskGetTickCount(),
+//						tmpU32
+//				);
+//			}
+//		}
+//		else
+//		{
+//			mutex_printf("%08X\n", (uint32_t)&Message_Queue);
+//		    vTaskDelay(1000 / portTICK_PERIOD_MS);
+//		}
 
         if(NULL != BinarySemaphore)
         {
         	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
         	{
         		vTaskList(info_buf);
-        		printf("TaskList Len:%d\r\n", strlen(info_buf));
-        		printf("%s\r\n",info_buf);
+        		mutex_printf("Task:%s, TaskList Len:%d\r\n",
+        				pcTaskGetName(NULL),
+						strlen(info_buf));
+        		mutex_printf("%s\r\n",info_buf);
 
         		vTaskGetRunTimeStats(info_buf);
-        		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
-        		printf("%s\r\n",info_buf);
+        		mutex_printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+        		mutex_printf("%s\r\n",info_buf);
 
                 xSemaphoreGive(BinarySemaphore);
         	}

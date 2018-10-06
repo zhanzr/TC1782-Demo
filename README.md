@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 13.
+FreeRTOS Example 14.
 
 Content:
-        Priority Inversion Test.
+        Mutex test.
 
 
