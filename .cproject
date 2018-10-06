@@ -167,6 +167,9 @@
 							<tool id="com.rt.hightec.buildsystem.tricore.new.archiver.476483414" name="TriCore Archiver" superClass="com.rt.hightec.buildsystem.tricore.new.archiver"/>
 						</toolChain>
 					</folderInfo>
+					<fileInfo id="com.rt.hightec.buildsystem.tricore.new.configuration.excutable.302337861.221867387" name="heap_2.c" rcbsApplicability="disable" resourcePath="src/FreeRTOS_Source/portable/MemMang/heap_2.c" toolsToInvoke="com.rt.hightec.buildsystem.tricore.new.compiler.c.1300966571.1321325682">
+						<tool id="com.rt.hightec.buildsystem.tricore.new.compiler.c.1300966571.1321325682" name="TriCore C Compiler" superClass="com.rt.hightec.buildsystem.tricore.new.compiler.c.1300966571"/>
+					</fileInfo>
 					<sourceEntries>
 						<entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="h"/>
 						<entry excluding="FreeRTOS_Source/portable/MemMang/heap_2.c" flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name="src"/>

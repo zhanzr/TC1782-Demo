@@ -100,9 +100,9 @@ peripheral clock. */
 #define configPERIPHERAL_CLOCK_HZ			( ( unsigned long ) configCPU_CLOCK_HZ / 2UL )
 #define configTICK_RATE_HZ					( ( TickType_t ) 1000UL )
 #define configMAX_PRIORITIES				( 15 )
-#define configMINIMAL_STACK_SIZE			( ( unsigned short ) 128 )
-#define configTOTAL_HEAP_SIZE				( ( size_t ) ( 70U * 1024U ) )
-#define configMAX_TASK_NAME_LEN				( 16 )
+#define configMINIMAL_STACK_SIZE			( ( unsigned short ) 64 )
+#define configTOTAL_HEAP_SIZE				( ( size_t ) ( 80U * 1024U ) )
+#define configMAX_TASK_NAME_LEN				( 32 )
 #define configUSE_16_BIT_TICKS				0
 #define configIDLE_SHOULD_YIELD				0
 #define configUSE_MALLOC_FAILED_HOOK 		1
@@ -130,8 +130,8 @@ peripheral clock. */
 /* Software timer configuration. */
 #define configUSE_TIMERS					1
 #define configTIMER_TASK_PRIORITY			( 4 )
-#define configTIMER_QUEUE_LENGTH			( 5 )
-#define configTIMER_TASK_STACK_DEPTH		configMINIMAL_STACK_SIZE
+#define configTIMER_QUEUE_LENGTH			( 3 )
+#define configTIMER_TASK_STACK_DEPTH		( ( unsigned short ) 512 )
 
 /* Set the following definitions to 1 to include the API function, or zero
  to exclude the API function. */

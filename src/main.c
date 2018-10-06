@@ -156,31 +156,10 @@ void led1_task(void *pvParameters);
 TaskHandle_t g_info_task_handler;
 void print_task(void *pvParameters);
 
-int mutex_printf(char const *fmt, ...)
+static inline void flush_stdout(void)
 {
-	if(NULL != MutexSemaphore)
-	{
-		int ret;
-
-		xSemaphoreTake(MutexSemaphore,portMAX_DELAY);
-
-		char buffer[1024];
-		va_list ap;
-
-		va_start(ap, fmt);
-		vsprintf(buffer, fmt, ap);
-		va_end(ap);
-
-		ret = printf(buffer);
-
-		xSemaphoreGive(MutexSemaphore);
-
-		return ret;
-	}
-	else
-	{
-		return 0;
-	}
+	__asm__ volatile ("nop" ::: "memory");
+	__asm volatile ("" : : : "memory");
 }
 
 int main(void)
@@ -203,10 +182,6 @@ int main(void)
 			g_ticks,
 			__TRICORE_CORE__
 	);
-
-	printf("%u %u %u", configMAX_PRIORITIES,
-			configMINIMAL_STACK_SIZE,
-			configTOTAL_HEAP_SIZE);
 
 	/* Setup the hardware for use with the TriCore evaluation board. */
 	prvSetupHardware();
@@ -316,10 +291,19 @@ void led0_task(void *pvParameters)
         	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
         	{
         		vTaskList(info_buf);
-        		mutex_printf("Task:%s, TaskList Len:%d\r\n",
-        				pcTaskGetName(NULL),
-						strlen(info_buf));
-        		mutex_printf("%s\r\n",info_buf);
+        		if(NULL != MutexSemaphore)
+        		{
+        			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+        			{
+        				printf("%s,TaskList Len:%d\r\n",
+        						pcTaskGetName(NULL),
+								strlen(info_buf));
+        				printf("%s\r\n",info_buf);
+        				flush_stdout();
+
+        				xSemaphoreGive(MutexSemaphore);
+        			}
+        		}
 
                 xSemaphoreGive(BinarySemaphore);
         	}
@@ -347,10 +331,19 @@ void led1_task(void *pvParameters)
         	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
         	{
         		vTaskList(info_buf);
-        		mutex_printf("Task:%s, TaskList Len:%d\r\n",
-        				pcTaskGetName(NULL),
-						strlen(info_buf));
-        		mutex_printf("%s\r\n",info_buf);
+        		if(NULL != MutexSemaphore)
+        		{
+        			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+        			{
+        				printf("%s,TaskList Len:%d\r\n",
+        						pcTaskGetName(NULL),
+								strlen(info_buf));
+        				printf("%s\r\n",info_buf);
+        				flush_stdout();
+
+        				xSemaphoreGive(MutexSemaphore);
+        			}
+        		}
 
                 xSemaphoreGive(BinarySemaphore);
         	}
@@ -390,14 +383,24 @@ void print_task(void *pvParameters)
         	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
         	{
         		vTaskList(info_buf);
-        		mutex_printf("Task:%s, TaskList Len:%d\r\n",
-        				pcTaskGetName(NULL),
-						strlen(info_buf));
-        		mutex_printf("%s\r\n",info_buf);
+        		if(NULL != MutexSemaphore)
+        		{
+        			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+        			{
+        				printf("%s,TaskList Len:%d\r\n",
+        						pcTaskGetName(NULL),
+								strlen(info_buf));
+        				printf("%s\r\n",info_buf);
+        				flush_stdout();
 
-        		vTaskGetRunTimeStats(info_buf);
-        		mutex_printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
-        		mutex_printf("%s\r\n",info_buf);
+                		vTaskGetRunTimeStats(info_buf);
+                		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+                		printf("%s\r\n",info_buf);
+        				flush_stdout();
+
+        				xSemaphoreGive(MutexSemaphore);
+        			}
+        		}
 
                 xSemaphoreGive(BinarySemaphore);
         	}
