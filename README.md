@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 17.
+FreeRTOS Example 18.
 
 Content:
-        Memory malloc and free API test.
+        Task Notification API test.
 
 

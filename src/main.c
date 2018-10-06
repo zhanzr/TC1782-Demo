@@ -258,6 +258,10 @@ void AutoReloadCallback(TimerHandle_t xTimer)
 	{
 		xEventGroupSetBits(EventGroupHandler,EVENTBIT_1);
 	}
+
+	xTaskNotify( g_task0_handler, 1, eSetValueWithOverwrite);
+	xTaskNotify( g_task1_handler, 2, eSetValueWithOverwrite);
+	xTaskNotify( g_info_task_handler, 3, eSetValueWithOverwrite);
 }
 
 void OneShotCallback(TimerHandle_t xTimer)
@@ -299,9 +303,6 @@ void OneShotCallback(TimerHandle_t xTimer)
 void start_task(void *pvParameters)
 {
 	Message_Queue = xQueueCreate(MESSAGE_Q_NUM, sizeof(uint32_t));
-
-	BinarySemaphore = xSemaphoreCreateBinary();
-	xSemaphoreGive(BinarySemaphore);
 
 	CountSemaphore = xSemaphoreCreateCounting(2, 2);
 
@@ -391,28 +392,24 @@ void led0_task(void *pvParameters)
 			}
 		}
 
-		if(NULL != BinarySemaphore)
-		{
-			if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
-			{
+		uint32_t NotifyValue=ulTaskNotifyTake( pdTRUE, /* Clear the notification value on exit. */
+		portMAX_DELAY );/* Block indefinitely. */
+
 				vTaskList(info_buf);
 				if(NULL != MutexSemaphore)
 				{
 					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 					{
-//						printf("%s,TaskList Len:%d\r\n",
-//								pcTaskGetName(NULL),
-//								strlen(info_buf));
-//						printf("%s\r\n",info_buf);
-//						flush_stdout();
+						printf("%s,TaskList Len:%d, %08X\r\n",
+								pcTaskGetName(NULL),
+								strlen(info_buf),
+								NotifyValue);
+						printf("%s\r\n",info_buf);
+						flush_stdout();
 
 						xSemaphoreGive(MutexSemaphore);
 					}
 				}
-
-				xSemaphoreGive(BinarySemaphore);
-			}
-		}
 	}
 }
 
@@ -464,28 +461,25 @@ void led1_task(void *pvParameters)
 			xQueueSend(Message_Queue, &tmpTicks, 0);
 		}
 
-		if(NULL != BinarySemaphore)
-		{
-			if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
-			{
+		uint32_t NotifyValue=ulTaskNotifyTake( pdTRUE, /* Clear the notification value on exit. */
+		portMAX_DELAY );/* Block indefinitely. */
+
 				vTaskList(info_buf);
 				if(NULL != MutexSemaphore)
 				{
 					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 					{
-//						printf("%s,TaskList Len:%d\r\n",
-//								pcTaskGetName(NULL),
-//								strlen(info_buf));
-//						printf("%s\r\n",info_buf);
-//						flush_stdout();
+						printf("%s,TaskList Len:%d, %08X\r\n",
+								pcTaskGetName(NULL),
+								strlen(info_buf),
+								NotifyValue);
+						printf("%s\r\n",info_buf);
+						flush_stdout();
 
 						xSemaphoreGive(MutexSemaphore);
 					}
 				}
 
-				xSemaphoreGive(BinarySemaphore);
-			}
-		}
 
 	}
 }
@@ -516,18 +510,18 @@ void print_task(void *pvParameters)
 		//		    vTaskDelay(1000 / portTICK_PERIOD_MS);
 		//		}
 
-		if(NULL != BinarySemaphore)
-		{
-			if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
-			{
+		uint32_t NotifyValue = ulTaskNotifyTake( pdTRUE, /* Clear the notification value on exit. */
+		portMAX_DELAY );/* Block indefinitely. */
+
 				vTaskList(info_buf);
 				if(NULL != MutexSemaphore)
 				{
 					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 					{
-						printf("%s,TaskList Len:%d\r\n",
+						printf("%s,TaskList Len:%d, %08X\r\n",
 								pcTaskGetName(NULL),
-								strlen(info_buf));
+								strlen(info_buf),
+								NotifyValue);
 						printf("%s\r\n",info_buf);
 						flush_stdout();
 
@@ -554,9 +548,6 @@ void print_task(void *pvParameters)
 					}
 				}
 
-				xSemaphoreGive(BinarySemaphore);
-			}
-		}
 
 		//        if(NULL != CountSemaphore)
 		//        {
