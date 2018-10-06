@@ -19,6 +19,7 @@
 #include "croutine.h"
 #include "queue.h"
 #include "semphr.h"
+#include "timers.h"
 
 /* Demo application includes. */
 #include "partest.h"
@@ -58,6 +59,9 @@ SemaphoreHandle_t BinarySemaphore;
 SemaphoreHandle_t CountSemaphore;
 
 SemaphoreHandle_t MutexSemaphore;
+
+TimerHandle_t 	AutoReloadTimer_Handle;
+TimerHandle_t	OneShotTimer_Handle;
 /*----------------------------------------------------------*/
 
 /* Constants for the ComTest tasks. */
@@ -168,10 +172,10 @@ int main(void)
 
 	InitLED();
 
-//	/* initialise timer at SYSTIME_CLOCK rate */
-//	TimerInit(SYSTIME_CLOCK);
-//	/* add own handler for timer interrupts */
-//	TimerSetHandler(my_timer_handler);
+	//	/* initialise timer at SYSTIME_CLOCK rate */
+	//	TimerInit(SYSTIME_CLOCK);
+	//	/* add own handler for timer interrupts */
+	//	TimerSetHandler(my_timer_handler);
 
 	/* enable global interrupts */
 	_enable();
@@ -186,26 +190,26 @@ int main(void)
 	/* Setup the hardware for use with the TriCore evaluation board. */
 	prvSetupHardware();
 
-//	ConfigureTimeForRunTimeStats();
+	//	ConfigureTimeForRunTimeStats();
 
 	/* Start standard demo/test application flash tasks.  See the comments at
 	the top of this file.  The LED flash tasks are always created.  The other
 	tasks are only created if mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY is set to
 	0 (at the top of this file).  See the comments at the top of this file for
 	more information. */
-//	vStartLEDFlashTasks( mainLED_TASK_PRIORITY );
+	//	vStartLEDFlashTasks( mainLED_TASK_PRIORITY );
 
 	/* The following function will only create more tasks and timers if
 	mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY is set to 0 (at the top of this
 	file).  See the comments at the top of this file for more information. */
-//	prvOptionallyCreateComprehensveTestApplication();
+	//	prvOptionallyCreateComprehensveTestApplication();
 
 	xTaskCreate((TaskFunction_t )start_task,
-	                (const char*    )"start_task",
-	                (uint16_t       )512,
-	                (void*          )NULL,
-	                (UBaseType_t    )tskIDLE_PRIORITY + 1,
-	                (TaskHandle_t*  )&StartTask_Handler);
+			(const char*    )"start_task",
+			(uint16_t       )512,
+			(void*          )NULL,
+			(UBaseType_t    )tskIDLE_PRIORITY + 1,
+			(TaskHandle_t*  )&StartTask_Handler);
 
 	/* Now all the tasks have been started - start the scheduler. */
 	vTaskStartScheduler();
@@ -243,113 +247,169 @@ int main(void)
 	return EXIT_SUCCESS;
 }
 /*-----------------------------------------------------------*/
+void AutoReloadCallback(TimerHandle_t xTimer)
+{
+	if(NULL != OneShotTimer_Handle)
+	{
+		xTimerStart(OneShotTimer_Handle,0);
+	}
+}
+
+void OneShotCallback(TimerHandle_t xTimer)
+{
+	char info_buf[256];
+
+	vParTestToggleLED(0);
+	vParTestToggleLED(1);
+
+	if(NULL != BinarySemaphore)
+	{
+		if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+		{
+			vTaskList(info_buf);
+			if(NULL != MutexSemaphore)
+			{
+				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+				{
+					printf("%s,TaskList Len:%d\r\n",
+							pcTaskGetName(NULL),
+							strlen(info_buf));
+					printf("%s\r\n",info_buf);
+					flush_stdout();
+
+					xSemaphoreGive(MutexSemaphore);
+				}
+			}
+
+			xSemaphoreGive(BinarySemaphore);
+		}
+	}
+}
+
 void start_task(void *pvParameters)
 {
 	Message_Queue = xQueueCreate(MESSAGE_Q_NUM, sizeof(uint32_t));
 
 	BinarySemaphore = xSemaphoreCreateBinary();
-    xSemaphoreGive(BinarySemaphore);
+	xSemaphoreGive(BinarySemaphore);
 
 	CountSemaphore = xSemaphoreCreateCounting(2, 2);
 
 	MutexSemaphore = xSemaphoreCreateMutex();
 
-    xTaskCreate((TaskFunction_t )led0_task,
-                (const char*    )"led0_task",
-                (uint16_t       )768,
-                (void*          )NULL,
-                (UBaseType_t    )tskIDLE_PRIORITY + 2,
-                (TaskHandle_t*  )&g_task0_handler);
+	AutoReloadTimer_Handle=xTimerCreate((const char*		)"AT",
+			(TickType_t			)2000 / portTICK_PERIOD_MS,
+			(UBaseType_t		)pdTRUE,
+			(void*				)1,
+			(TimerCallbackFunction_t)AutoReloadCallback);
 
-    xTaskCreate((TaskFunction_t )led1_task,
-                (const char*    )"led1_task",
-                (uint16_t       )768,
-                (void*          )NULL,
-                (UBaseType_t    )tskIDLE_PRIORITY + 2,
-                (TaskHandle_t*  )&g_task1_handler);
+	OneShotTimer_Handle=xTimerCreate((const char*			)"OT",
+			(TickType_t			)500 / portTICK_PERIOD_MS,
+			(UBaseType_t			)pdFALSE,
+			(void*					)2,
+			(TimerCallbackFunction_t)OneShotCallback);
 
-    xTaskCreate((TaskFunction_t )print_task,
-                (const char*    )"print_task",
-                (uint16_t       )768,
-                (void*          )NULL,
-                (UBaseType_t    )tskIDLE_PRIORITY + 2,
-                (TaskHandle_t*  )&g_info_task_handler);
-    vTaskDelete(StartTask_Handler);
+	if(NULL != AutoReloadTimer_Handle)
+	{
+		xTimerStart(AutoReloadTimer_Handle,0);
+	}
+
+	xTaskCreate((TaskFunction_t )led0_task,
+			(const char*    )"led0_task",
+			(uint16_t       )768,
+			(void*          )NULL,
+			(UBaseType_t    )tskIDLE_PRIORITY + 2,
+			(TaskHandle_t*  )&g_task0_handler);
+
+	xTaskCreate((TaskFunction_t )led1_task,
+			(const char*    )"led1_task",
+			(uint16_t       )768,
+			(void*          )NULL,
+			(UBaseType_t    )tskIDLE_PRIORITY + 2,
+			(TaskHandle_t*  )&g_task1_handler);
+
+	xTaskCreate((TaskFunction_t )print_task,
+			(const char*    )"print_task",
+			(uint16_t       )768,
+			(void*          )NULL,
+			(UBaseType_t    )tskIDLE_PRIORITY + 2,
+			(TaskHandle_t*  )&g_info_task_handler);
+	vTaskDelete(StartTask_Handler);
 }
 
 void led0_task(void *pvParameters)
 {
 	char info_buf[512];
 
-    while(1)
-    {
-    	vParTestToggleLED(0);
-    	vTaskDelay(4000 / portTICK_PERIOD_MS);
+	while(1)
+	{
+		//    	vParTestToggleLED(0);
+		vTaskDelay(4000 / portTICK_PERIOD_MS);
 
-        if(NULL != BinarySemaphore)
-        {
-        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
-        	{
-        		vTaskList(info_buf);
-        		if(NULL != MutexSemaphore)
-        		{
-        			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
-        			{
-        				printf("%s,TaskList Len:%d\r\n",
-        						pcTaskGetName(NULL),
+		if(NULL != BinarySemaphore)
+		{
+			if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+			{
+				vTaskList(info_buf);
+				if(NULL != MutexSemaphore)
+				{
+					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+					{
+						printf("%s,TaskList Len:%d\r\n",
+								pcTaskGetName(NULL),
 								strlen(info_buf));
-        				printf("%s\r\n",info_buf);
-        				flush_stdout();
+						printf("%s\r\n",info_buf);
+						flush_stdout();
 
-        				xSemaphoreGive(MutexSemaphore);
-        			}
-        		}
+						xSemaphoreGive(MutexSemaphore);
+					}
+				}
 
-                xSemaphoreGive(BinarySemaphore);
-        	}
-        }
-    }
+				xSemaphoreGive(BinarySemaphore);
+			}
+		}
+	}
 }
 
 void led1_task(void *pvParameters)
 {
 	char info_buf[512];
 
-    while(1)
-    {
-    	vParTestToggleLED(1);
-    	vTaskDelay(4000 / portTICK_PERIOD_MS);
+	while(1)
+	{
+		//    	vParTestToggleLED(1);
+		vTaskDelay(4000 / portTICK_PERIOD_MS);
 
-        if(NULL != Message_Queue)
-        {
-        	uint32_t tmpTicks = xTaskGetTickCount();
-        	xQueueSend(Message_Queue, &tmpTicks, 0);
-        }
+		if(NULL != Message_Queue)
+		{
+			uint32_t tmpTicks = xTaskGetTickCount();
+			xQueueSend(Message_Queue, &tmpTicks, 0);
+		}
 
-        if(NULL != BinarySemaphore)
-        {
-        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
-        	{
-        		vTaskList(info_buf);
-        		if(NULL != MutexSemaphore)
-        		{
-        			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
-        			{
-        				printf("%s,TaskList Len:%d\r\n",
-        						pcTaskGetName(NULL),
+		if(NULL != BinarySemaphore)
+		{
+			if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+			{
+				vTaskList(info_buf);
+				if(NULL != MutexSemaphore)
+				{
+					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+					{
+						printf("%s,TaskList Len:%d\r\n",
+								pcTaskGetName(NULL),
 								strlen(info_buf));
-        				printf("%s\r\n",info_buf);
-        				flush_stdout();
+						printf("%s\r\n",info_buf);
+						flush_stdout();
 
-        				xSemaphoreGive(MutexSemaphore);
-        			}
-        		}
+						xSemaphoreGive(MutexSemaphore);
+					}
+				}
 
-                xSemaphoreGive(BinarySemaphore);
-        	}
-        }
+				xSemaphoreGive(BinarySemaphore);
+			}
+		}
 
-    }
+	}
 }
 
 void print_task(void *pvParameters)
@@ -358,98 +418,98 @@ void print_task(void *pvParameters)
 
 	while(1)
 	{
-    	vTaskDelay(4000 / portTICK_PERIOD_MS);
-//		if(NULL != Message_Queue)
-//		{
-//			uint32_t tmpU32;
-//			if(xQueueReceive(Message_Queue, &tmpU32, portMAX_DELAY))
-//			{
-//				mutex_printf("%08X\n", (uint32_t)&Message_Queue);
-//				mutex_printf("CPU:%u Hz %u %u\n",
-//						get_cpu_frequency(),
-//						xTaskGetTickCount(),
-//						tmpU32
-//				);
-//			}
-//		}
-//		else
-//		{
-//			mutex_printf("%08X\n", (uint32_t)&Message_Queue);
-//		    vTaskDelay(1000 / portTICK_PERIOD_MS);
-//		}
+		vTaskDelay(4000 / portTICK_PERIOD_MS);
+		//		if(NULL != Message_Queue)
+		//		{
+		//			uint32_t tmpU32;
+		//			if(xQueueReceive(Message_Queue, &tmpU32, portMAX_DELAY))
+		//			{
+		//				mutex_printf("%08X\n", (uint32_t)&Message_Queue);
+		//				mutex_printf("CPU:%u Hz %u %u\n",
+		//						get_cpu_frequency(),
+		//						xTaskGetTickCount(),
+		//						tmpU32
+		//				);
+		//			}
+		//		}
+		//		else
+		//		{
+		//			mutex_printf("%08X\n", (uint32_t)&Message_Queue);
+		//		    vTaskDelay(1000 / portTICK_PERIOD_MS);
+		//		}
 
-        if(NULL != BinarySemaphore)
-        {
-        	if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
-        	{
-        		vTaskList(info_buf);
-        		if(NULL != MutexSemaphore)
-        		{
-        			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
-        			{
-        				printf("%s,TaskList Len:%d\r\n",
-        						pcTaskGetName(NULL),
+		if(NULL != BinarySemaphore)
+		{
+			if(pdTRUE == xSemaphoreTake(BinarySemaphore, portMAX_DELAY))
+			{
+				vTaskList(info_buf);
+				if(NULL != MutexSemaphore)
+				{
+					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+					{
+						printf("%s,TaskList Len:%d\r\n",
+								pcTaskGetName(NULL),
 								strlen(info_buf));
-        				printf("%s\r\n",info_buf);
-        				flush_stdout();
+						printf("%s\r\n",info_buf);
+						flush_stdout();
 
-                		vTaskGetRunTimeStats(info_buf);
-                		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
-                		printf("%s\r\n",info_buf);
-        				flush_stdout();
+						vTaskGetRunTimeStats(info_buf);
+						printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+						printf("%s\r\n",info_buf);
+						flush_stdout();
 
-        				xSemaphoreGive(MutexSemaphore);
-        			}
-        		}
+						xSemaphoreGive(MutexSemaphore);
+					}
+				}
 
-                xSemaphoreGive(BinarySemaphore);
-        	}
-        }
+				xSemaphoreGive(BinarySemaphore);
+			}
+		}
 
-//        if(NULL != CountSemaphore)
-//        {
-//        	if(pdTRUE == xSemaphoreTake(CountSemaphore, portMAX_DELAY))
-//        	{
-//        		vTaskList(info_buf);
-//        		printf("TaskList Len:%d\r\n", strlen(info_buf));
-//        		printf("%s\r\n",info_buf);
-//
-//        		vTaskGetRunTimeStats(info_buf);
-//        		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
-//        		printf("%s\r\n",info_buf);
-//
-//        		uint32_t tmp_sema_cnt = uxSemaphoreGetCount(CountSemaphore);
-//        		printf("SemaCnt %08X: %d\n", (uint32_t)&CountSemaphore, tmp_sema_cnt);
-//                xSemaphoreGive(CountSemaphore);
-//                tmp_sema_cnt = uxSemaphoreGetCount(CountSemaphore);
-//        		printf("SemaCnt %08X: %d\n", (uint32_t)&CountSemaphore, tmp_sema_cnt);
-//        	}
-//        }
+		//        if(NULL != CountSemaphore)
+		//        {
+		//        	if(pdTRUE == xSemaphoreTake(CountSemaphore, portMAX_DELAY))
+		//        	{
+		//        		vTaskList(info_buf);
+		//        		printf("TaskList Len:%d\r\n", strlen(info_buf));
+		//        		printf("%s\r\n",info_buf);
+		//
+		//        		vTaskGetRunTimeStats(info_buf);
+		//        		printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+		//        		printf("%s\r\n",info_buf);
+		//
+		//        		uint32_t tmp_sema_cnt = uxSemaphoreGetCount(CountSemaphore);
+		//        		printf("SemaCnt %08X: %d\n", (uint32_t)&CountSemaphore, tmp_sema_cnt);
+		//                xSemaphoreGive(CountSemaphore);
+		//                tmp_sema_cnt = uxSemaphoreGetCount(CountSemaphore);
+		//        		printf("SemaCnt %08X: %d\n", (uint32_t)&CountSemaphore, tmp_sema_cnt);
+		//        	}
+		//        }
 
-//		printf("STM_CLC\t%08X\t:%08X\n\n", &STM_CLC, STM_CLC.reg);
-//		printf("STM_ID\t%08X\t:%08X\n\n", &STM_ID, STM_ID.reg);
-//		printf("STM_TIM0\t%08X\t:%08X\n\n", &STM_TIM0, STM_TIM0.reg);
-//		printf("STM_TIM1\t%08X\t:%08X\n\n", &STM_TIM1, STM_TIM1.reg);
-//		printf("STM_TIM2\t%08X\t:%08X\n\n", &STM_TIM2, STM_TIM2.reg);
-//		printf("STM_TIM3\t%08X\t:%08X\n\n", &STM_TIM3, STM_TIM3.reg);
-//		printf("STM_TIM4\t%08X\t:%08X\n\n", &STM_TIM4, STM_TIM4.reg);
-//		printf("STM_TIM5\t%08X\t:%08X\n\n", &STM_TIM5, STM_TIM5.reg);
-//		printf("STM_TIM6\t%08X\t:%08X\n\n", &STM_TIM6, STM_TIM6.reg);
-//		printf("STM_CAP\t%08X\t:%08X\n\n", &STM_CAP, STM_CAP.reg);
-//		printf("STM_CMP0\t%08X\t:%08X\n\n", &STM_CMP0, STM_CMP0.reg);
-//		printf("STM_CMP1\t%08X\t:%08X\n\n", &STM_CMP1, STM_CMP1.reg);
-//		printf("STM_CMCON\t%08X\t:%08X\n\n", &STM_CMCON, STM_CMCON.reg);
-//		printf("STM_ICR\t%08X\t:%08X\n\n", &STM_ICR, STM_ICR.reg);
-//		printf("STM_ISRR\t%08X\t:%08X\n\n", &STM_ISRR, STM_ISRR.reg);
-//		printf("STM_SRC1\t%08X\t:%08X\n\n", &STM_SRC1, STM_SRC1.reg);
-//		printf("STM_SRC0\t%08X\t:%08X\n\n", &STM_SRC0, STM_SRC0.reg);
+		//		printf("STM_CLC\t%08X\t:%08X\n\n", &STM_CLC, STM_CLC.reg);
+		//		printf("STM_ID\t%08X\t:%08X\n\n", &STM_ID, STM_ID.reg);
+		//		printf("STM_TIM0\t%08X\t:%08X\n\n", &STM_TIM0, STM_TIM0.reg);
+		//		printf("STM_TIM1\t%08X\t:%08X\n\n", &STM_TIM1, STM_TIM1.reg);
+		//		printf("STM_TIM2\t%08X\t:%08X\n\n", &STM_TIM2, STM_TIM2.reg);
+		//		printf("STM_TIM3\t%08X\t:%08X\n\n", &STM_TIM3, STM_TIM3.reg);
+		//		printf("STM_TIM4\t%08X\t:%08X\n\n", &STM_TIM4, STM_TIM4.reg);
+		//		printf("STM_TIM5\t%08X\t:%08X\n\n", &STM_TIM5, STM_TIM5.reg);
+		//		printf("STM_TIM6\t%08X\t:%08X\n\n", &STM_TIM6, STM_TIM6.reg);
+		//		printf("STM_CAP\t%08X\t:%08X\n\n", &STM_CAP, STM_CAP.reg);
+		//		printf("STM_CMP0\t%08X\t:%08X\n\n", &STM_CMP0, STM_CMP0.reg);
+		//		printf("STM_CMP1\t%08X\t:%08X\n\n", &STM_CMP1, STM_CMP1.reg);
+		//		printf("STM_CMCON\t%08X\t:%08X\n\n", &STM_CMCON, STM_CMCON.reg);
+		//		printf("STM_ICR\t%08X\t:%08X\n\n", &STM_ICR, STM_ICR.reg);
+		//		printf("STM_ISRR\t%08X\t:%08X\n\n", &STM_ISRR, STM_ISRR.reg);
+		//		printf("STM_SRC1\t%08X\t:%08X\n\n", &STM_SRC1, STM_SRC1.reg);
+		//		printf("STM_SRC0\t%08X\t:%08X\n\n", &STM_SRC0, STM_SRC0.reg);
 	}
 }
 
 static void prvCheckTask( void *pvParameters )
 {
-TickType_t xDelayPeriod = mainNO_ERROR_FLASH_PERIOD_MS;
-TickType_t xLastExecutionTime;
+	TickType_t xDelayPeriod = mainNO_ERROR_FLASH_PERIOD_MS;
+	TickType_t xLastExecutionTime;
 
 	/* Just to stop compiler warnings. */
 	( void ) pvParameters;
@@ -490,8 +550,8 @@ TickType_t xLastExecutionTime;
 
 static long prvCheckOtherTasksAreStillRunning( void )
 {
-long lReturn = pdPASS;
-unsigned long ulHighFrequencyTimerTaskIterations, ulExpectedIncFrequency_ms;
+	long lReturn = pdPASS;
+	unsigned long ulHighFrequencyTimerTaskIterations, ulExpectedIncFrequency_ms;
 
 	/* Check all the demo tasks (other than the flash tasks) to ensure
 	that they are all still running, and that none have detected an error. */
@@ -561,9 +621,9 @@ unsigned long ulHighFrequencyTimerTaskIterations, ulExpectedIncFrequency_ms;
 	executed, and the frequency at which it is expected to execute in ms. */
 	ulHighFrequencyTimerTaskIterations = ulInterruptNestingTestGetIterationCount( &ulExpectedIncFrequency_ms );
 	if( ( ulHighFrequencyTimerTaskIterations < ( ( mainNO_ERROR_FLASH_PERIOD_MS / ulExpectedIncFrequency_ms ) - 1 ) )
-		||
-		( ulHighFrequencyTimerTaskIterations > ( ( mainNO_ERROR_FLASH_PERIOD_MS / ulExpectedIncFrequency_ms ) +5 ) )
-	  )
+			||
+			( ulHighFrequencyTimerTaskIterations > ( ( mainNO_ERROR_FLASH_PERIOD_MS / ulExpectedIncFrequency_ms ) +5 ) )
+	)
 	{
 		/* Would have expected the high frequency timer task to have
 		incremented its execution count more times that reported. */
@@ -576,7 +636,7 @@ unsigned long ulHighFrequencyTimerTaskIterations, ulExpectedIncFrequency_ms;
 
 static void prvSetupHardware( void )
 {
-extern void set_cpu_frequency(void);
+	extern void set_cpu_frequency(void);
 
 	/* Set-up the PLL. */
 	set_cpu_frequency();
@@ -605,7 +665,7 @@ void vApplicationMallocFailedHook( void )
 
 void vApplicationTickHook( void )
 {
-	#if mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY != 1
+#if mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY != 1
 	{
 		/* vApplicationTickHook() will only be called if configUSE_TICK_HOOK is set
 		to 1 in FreeRTOSConfig.h.  It is a hook function that will get called during
@@ -616,7 +676,7 @@ void vApplicationTickHook( void )
 		can be called from an ISR. */
 		vTimerPeriodicISRTests();
 	}
-	#endif /* mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY */
+#endif /* mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY */
 }
 /*-----------------------------------------------------------*/
 
@@ -636,9 +696,9 @@ void vApplicationIdleHook( void )
 
 static portBASE_TYPE prvAreRegTestTasksStillRunning( void )
 {
-static unsigned long ulPreviousRegisterTest1Count = 0;
-static unsigned long ulPreviousRegisterTest2Count = 0;
-portBASE_TYPE xReturn = pdPASS;
+	static unsigned long ulPreviousRegisterTest1Count = 0;
+	static unsigned long ulPreviousRegisterTest2Count = 0;
+	portBASE_TYPE xReturn = pdPASS;
 
 	/* Check to see if the Counts have changed since the last check. */
 	if( ulRegisterTest1Count == ulPreviousRegisterTest1Count )
@@ -661,7 +721,7 @@ portBASE_TYPE xReturn = pdPASS;
 
 static void prvOptionallyCreateComprehensveTestApplication( void )
 {
-	#if mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY == 0
+#if mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY == 0
 	{
 		vStartIntegerMathTasks( tskIDLE_PRIORITY );
 		vStartDynamicPriorityTasks();
@@ -687,7 +747,7 @@ static void prvOptionallyCreateComprehensveTestApplication( void )
 		it expects to see running. */
 		vCreateSuicidalTasks( mainCREATOR_TASK_PRIORITY );
 	}
-	#else /* mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY */
+#else /* mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY */
 	{
 		/* Just to prevent compiler warnings when the configuration options are
 		set such that these static functions are not used. */
@@ -695,7 +755,7 @@ static void prvOptionallyCreateComprehensveTestApplication( void )
 		( void ) prvRegisterCheckTask1;
 		( void ) prvRegisterCheckTask2;
 	}
-	#endif /* mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY */
+#endif /* mainCREATE_SIMPLE_LED_FLASHER_DEMO_ONLY */
 }
 /*-----------------------------------------------------------*/
 
@@ -703,9 +763,9 @@ static void prvRegisterCheckTask1( void *pvParameters )
 {
 	/* Make space on the stack for the parameter and a counter. */
 	__asm volatile( " sub.a %sp, 4 			\n"
-					" st.a [%sp], %a4		\n"
-					" mov %d15, 0			\n"
-					" st.w [%sp]4, %d15		\n" );
+			" st.a [%sp], %a4		\n"
+			" mov %d15, 0			\n"
+			" st.w [%sp]4, %d15		\n" );
 
 	/* Change all of the Context sensitive registers (except SP and RA). */
 	__asm volatile(
@@ -811,103 +871,103 @@ static void prvRegisterCheckTask2( void *pvParameters )
 {
 	/* Make space on the stack for the parameter and a counter. */
 	__asm volatile( " sub.a %sp, 4 		\n" \
-					" st.a [%sp], %a4	\n" \
-					" mov %d15, 0		\n" \
-					" st.w [%sp]4, %d15	\n" );
+			" st.a [%sp], %a4	\n" \
+			" mov %d15, 0		\n" \
+			" st.w [%sp]4, %d15	\n" );
 
 	/* Change all of the Context sensitive registers (except SP and RA). */
 	__asm volatile(	" mov %d0, 7		\n" \
-					" mov %d1, 1		\n" \
-					" mov %d2, 5		\n" \
-					" mov %d3, 4		\n" \
-					" mov %d4, 3		\n" \
-					" mov %d5, 2		\n" \
-					" mov %d6, 1		\n" \
-					" mov %d7, 0		\n" \
-					" mov %d8, 15		\n" \
-					" mov %d9, 14		\n" \
-					" mov %d10, 13		\n" \
-					" mov %d11, 12		\n" \
-					" mov %d12, 11		\n" \
-					" mov %d13, 10		\n" \
-					" mov %d14, 9		\n" \
-					" mov %d15, 8		\n" \
-					" mov.a %a2, 14		\n" \
-					" mov.a %a3, 13		\n" \
-					" mov.a %a4, 12		\n" \
-					" mov.a %a5, 7		\n" \
-					" mov.a %a6, 6		\n" \
-					" mov.a %a7, 5		\n" \
-					" mov.a %a12, 4		\n" \
-					" mov.a %a13, 3		\n" \
-					" mov.a %a14, 2		\n" );
+			" mov %d1, 1		\n" \
+			" mov %d2, 5		\n" \
+			" mov %d3, 4		\n" \
+			" mov %d4, 3		\n" \
+			" mov %d5, 2		\n" \
+			" mov %d6, 1		\n" \
+			" mov %d7, 0		\n" \
+			" mov %d8, 15		\n" \
+			" mov %d9, 14		\n" \
+			" mov %d10, 13		\n" \
+			" mov %d11, 12		\n" \
+			" mov %d12, 11		\n" \
+			" mov %d13, 10		\n" \
+			" mov %d14, 9		\n" \
+			" mov %d15, 8		\n" \
+			" mov.a %a2, 14		\n" \
+			" mov.a %a3, 13		\n" \
+			" mov.a %a4, 12		\n" \
+			" mov.a %a5, 7		\n" \
+			" mov.a %a6, 6		\n" \
+			" mov.a %a7, 5		\n" \
+			" mov.a %a12, 4		\n" \
+			" mov.a %a13, 3		\n" \
+			" mov.a %a14, 2		\n" );
 
 	/* Check the values of the registers. */
 	__asm volatile(	" _task2_loop:							\n" \
-					" syscall 0								\n" \
-					" eq %d1, %d0, 7						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d1, 1						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d2, 5						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d3, 4						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d4, 3						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d5, 2						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d6, 1						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d7, 0						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d8, 15						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d9, 14						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d10, 13						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d11, 12						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d12, 11						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d13, 10						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d14, 9						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" eq %d1, %d15, 8						\n" \
-					" jne %d1, 1, _task2_error_loop			\n" \
-					" mov.a %a15, 14						\n" \
-					" jne.a %a15, %a2, _task2_error_loop	\n" \
-					" mov.a %a15, 13						\n" \
-					" jne.a %a15, %a3, _task2_error_loop	\n" \
-					" mov.a %a15, 12						\n" \
-					" jne.a %a15, %a4, _task2_error_loop	\n" \
-					" mov.a %a15, 7							\n" \
-					" jne.a %a15, %a5, _task2_error_loop	\n" \
-					" mov.a %a15, 6							\n" \
-					" jne.a %a15, %a6, _task2_error_loop	\n" \
-					" mov.a %a15, 5							\n" \
-					" jne.a %a15, %a7, _task2_error_loop	\n" \
-					" mov.a %a15, 4							\n" \
-					" jne.a %a15, %a12, _task2_error_loop 	\n" \
-					" mov.a %a15, 3							\n" \
-					" jne.a %a15, %a13, _task2_error_loop	\n" \
-					" mov.a %a15, 2							\n" \
-					" jne.a %a15, %a14, _task2_error_loop	\n" \
-					" j _task2_skip_error_loop				\n"	\
-					"_task2_error_loop:						\n"	/* Hitting this error loop will stop the counter incrementing, allowing the check task to recognise an error. */ \
-					" debug									\n" \
-					" j _task2_error_loop					\n"	\
-					"_task2_skip_error_loop:				\n"	);
+			" syscall 0								\n" \
+			" eq %d1, %d0, 7						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d1, 1						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d2, 5						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d3, 4						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d4, 3						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d5, 2						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d6, 1						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d7, 0						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d8, 15						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d9, 14						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d10, 13						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d11, 12						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d12, 11						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d13, 10						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d14, 9						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" eq %d1, %d15, 8						\n" \
+			" jne %d1, 1, _task2_error_loop			\n" \
+			" mov.a %a15, 14						\n" \
+			" jne.a %a15, %a2, _task2_error_loop	\n" \
+			" mov.a %a15, 13						\n" \
+			" jne.a %a15, %a3, _task2_error_loop	\n" \
+			" mov.a %a15, 12						\n" \
+			" jne.a %a15, %a4, _task2_error_loop	\n" \
+			" mov.a %a15, 7							\n" \
+			" jne.a %a15, %a5, _task2_error_loop	\n" \
+			" mov.a %a15, 6							\n" \
+			" jne.a %a15, %a6, _task2_error_loop	\n" \
+			" mov.a %a15, 5							\n" \
+			" jne.a %a15, %a7, _task2_error_loop	\n" \
+			" mov.a %a15, 4							\n" \
+			" jne.a %a15, %a12, _task2_error_loop 	\n" \
+			" mov.a %a15, 3							\n" \
+			" jne.a %a15, %a13, _task2_error_loop	\n" \
+			" mov.a %a15, 2							\n" \
+			" jne.a %a15, %a14, _task2_error_loop	\n" \
+			" j _task2_skip_error_loop				\n"	\
+			"_task2_error_loop:						\n"	/* Hitting this error loop will stop the counter incrementing, allowing the check task to recognise an error. */ \
+			" debug									\n" \
+			" j _task2_error_loop					\n"	\
+			"_task2_skip_error_loop:				\n"	);
 
 	/* Load the parameter address from the stack and modify the value. */
 	__asm volatile(	" ld.w %d1, [%sp]4						\n"	\
-					" add %d1, %d1, 1						\n"	\
-					" st.w [%sp]4, %d1						\n"	\
-					" ld.a %a15, [%sp]						\n"	\
-					" st.w [%a15], %d1						\n"	\
-					" j _task2_loop                			\n"  );
+			" add %d1, %d1, 1						\n"	\
+			" st.w [%sp]4, %d1						\n"	\
+			" ld.a %a15, [%sp]						\n"	\
+			" st.w [%a15], %d1						\n"	\
+			" j _task2_loop                			\n"  );
 
 	/* The parameter is used but in the assembly. */
 	(void)pvParameters;
