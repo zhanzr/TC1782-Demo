@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 12.
+FreeRTOS Example 13.
 
 Content:
-        Counting Semaphore API Test.
+        Priority Inversion Test.
 
 
