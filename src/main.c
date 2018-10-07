@@ -42,9 +42,6 @@
 #include <machine/cint.h>
 #include <machine/wdtcon.h>
 
-volatile uint32_t g_ticks;
-volatile bool g_blink_flag;
-
 #define MESSAGE_Q_NUM   2
 QueueHandle_t Message_Queue;
 
@@ -160,17 +157,46 @@ void led1_task(void *pvParameters);
 TaskHandle_t g_info_task_handler;
 void print_task(void *pvParameters);
 
-static inline void flush_stdout(void)
+void enable_performance_cnt(void)
 {
-	__asm__ volatile ("nop" ::: "memory");
-	__asm volatile ("" : : : "memory");
+	unlock_wdtcon();
+	{
+		CCTRL_t tmpCCTRL;
+		tmpCCTRL.reg = _mfcr(CCTRL_ADDR);
+
+		//Instruction Cache Hit Count
+		//		tmpCCTRL.bits.M1 = 2;
+		//Data Cache Hit Count.
+		tmpCCTRL.bits.M1 = 3;
+		//Instruction Cache Miss Count
+
+		//		tmpCCTRL.bits.M2 = 1;
+		//Data Cache Clean Miss Count
+		tmpCCTRL.bits.M2 = 3;
+
+		//Data Cache Dirty Miss Count
+		tmpCCTRL.bits.M3 = 3;
+
+		//Normal Mode
+		tmpCCTRL.bits.CM = 0;
+		//Task Mode
+		//		tmpCCTRL.bits.CM = 1;
+
+		tmpCCTRL.bits.CE = 1;
+
+		_mtcr(CCTRL_ADDR, tmpCCTRL.reg);
+	}
+	lock_wdtcon();
 }
+
 
 int main(void)
 {
 	_init_uart(mainCOM_TEST_BAUD_RATE);
 
 	InitLED();
+
+	enable_performance_cnt();
 
 	//	/* initialise timer at SYSTIME_CLOCK rate */
 	//	TimerInit(SYSTIME_CLOCK);
@@ -180,10 +206,10 @@ int main(void)
 	/* enable global interrupts */
 	_enable();
 
-	printf("Tricore FreeRTOS %s @CPU:%u Hz %u Core:%04X\n",
+	printf("Tricore %04X %s @CPU:%u MHz Core:%04X\n",
+			__TRICORE_NAME__,
 			tskKERNEL_VERSION_NUMBER,
-			get_cpu_frequency(),
-			g_ticks,
+			get_cpu_frequency()/1000000,
 			__TRICORE_CORE__
 	);
 
@@ -221,28 +247,28 @@ int main(void)
 
 	while(1)
 	{
-//		//		c = _in_uart();
-//		/* check flag set by timer ISR in every 100 ms */
-//
-//		if(g_blink_flag)
-//		{
-//			printf("Failed. @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
-//					get_fpi_frequency(),
-//					get_cpu_frequency(),
-//					g_ticks,
-//					__TRICORE_CORE__
-//			);
-//
-//			LEDTOGGLE(0);
-//			LEDTOGGLE(1);
-//			//			LEDTOGGLE(2);
-//			//			LEDTOGGLE(3);
-//			//			LEDTOGGLE(4);
-//			//			LEDTOGGLE(5);
-//			//			LEDTOGGLE(6);
-//			//			LEDTOGGLE(7);
-//			g_blink_flag = false;
-//		}
+		//		//		c = _in_uart();
+		//		/* check flag set by timer ISR in every 100 ms */
+		//
+		//		if(g_blink_flag)
+		//		{
+		//			printf("Failed. @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
+		//					get_fpi_frequency(),
+		//					get_cpu_frequency(),
+		//					g_ticks,
+		//					__TRICORE_CORE__
+		//			);
+		//
+		//			LEDTOGGLE(0);
+		//			LEDTOGGLE(1);
+		//			//			LEDTOGGLE(2);
+		//			//			LEDTOGGLE(3);
+		//			//			LEDTOGGLE(4);
+		//			//			LEDTOGGLE(5);
+		//			//			LEDTOGGLE(6);
+		//			//			LEDTOGGLE(7);
+		//			g_blink_flag = false;
+		//		}
 	}
 	return EXIT_SUCCESS;
 }
@@ -259,8 +285,8 @@ void AutoReloadCallback(TimerHandle_t xTimer)
 		xEventGroupSetBits(EventGroupHandler,EVENTBIT_1);
 	}
 
-	xTaskNotify( g_task0_handler, 1, eSetValueWithOverwrite);
-	xTaskNotify( g_task1_handler, 2, eSetValueWithOverwrite);
+	//	xTaskNotify( g_task0_handler, 1, eSetValueWithOverwrite);
+	//	xTaskNotify( g_task1_handler, 2, eSetValueWithOverwrite);
 	xTaskNotify( g_info_task_handler, 3, eSetValueWithOverwrite);
 }
 
@@ -285,11 +311,10 @@ void OneShotCallback(TimerHandle_t xTimer)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-//					printf("%s,TaskList Len:%d\r\n",
-//							pcTaskGetName(NULL),
-//							strlen(info_buf));
-//					printf("%s\r\n",info_buf);
-//					flush_stdout();
+					//					printf("%s,TaskList Len:%d\r\n",
+					//							pcTaskGetName(NULL),
+					//							strlen(info_buf));
+					//					printf("%s\r\n",info_buf);
 
 					xSemaphoreGive(MutexSemaphore);
 				}
@@ -309,7 +334,7 @@ void start_task(void *pvParameters)
 	MutexSemaphore = xSemaphoreCreateMutex();
 
 	AutoReloadTimer_Handle=xTimerCreate((const char*		)"AT",
-			(TickType_t			)2000 / portTICK_PERIOD_MS,
+			(TickType_t			)1000 / portTICK_PERIOD_MS,
 			(UBaseType_t		)pdTRUE,
 			(void*				)1,
 			(TimerCallbackFunction_t)AutoReloadCallback);
@@ -324,7 +349,7 @@ void start_task(void *pvParameters)
 
 	if(NULL != AutoReloadTimer_Handle)
 	{
-		xTimerStart(AutoReloadTimer_Handle,0);
+		xTimerStart(AutoReloadTimer_Handle, 0);
 	}
 
 	xTaskCreate((TaskFunction_t )led0_task,
@@ -343,7 +368,7 @@ void start_task(void *pvParameters)
 
 	xTaskCreate((TaskFunction_t )print_task,
 			(const char*    )"print_task",
-			(uint16_t       )768,
+			(uint16_t       )2048,
 			(void*          )NULL,
 			(UBaseType_t    )tskIDLE_PRIORITY + 2,
 			(TaskHandle_t*  )&g_info_task_handler);
@@ -358,7 +383,7 @@ void led0_task(void *pvParameters)
 	while(1)
 	{
 		//    	vParTestToggleLED(0);
-//		vTaskDelay(4000 / portTICK_PERIOD_MS);
+		//		vTaskDelay(4000 / portTICK_PERIOD_MS);
 		if(EventGroupHandler!=NULL)
 		{
 			EventValue = xEventGroupGetBits(EventGroupHandler);
@@ -366,9 +391,9 @@ void led0_task(void *pvParameters)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-//					printf("<%s,ev:%08X\n",
-//							pcTaskGetName(NULL),
-//							(uint32_t)EventValue);
+					//					printf("<%s,ev:%08X\n",
+					//							pcTaskGetName(NULL),
+					//							(uint32_t)EventValue);
 					xSemaphoreGive(MutexSemaphore);
 				}
 			}
@@ -384,32 +409,31 @@ void led0_task(void *pvParameters)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-//					printf(">%s,ev:%08X\n",
-//							pcTaskGetName(NULL),
-//							(uint32_t)EventValue);
+					//					printf(">%s,ev:%08X\n",
+					//							pcTaskGetName(NULL),
+					//							(uint32_t)EventValue);
 					xSemaphoreGive(MutexSemaphore);
 				}
 			}
 		}
 
 		uint32_t NotifyValue=ulTaskNotifyTake( pdTRUE, /* Clear the notification value on exit. */
-		portMAX_DELAY );/* Block indefinitely. */
+				portMAX_DELAY );/* Block indefinitely. */
 
-				vTaskList(info_buf);
-				if(NULL != MutexSemaphore)
-				{
-					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
-					{
-						printf("%s,TaskList Len:%d, %08X\r\n",
-								pcTaskGetName(NULL),
-								strlen(info_buf),
-								NotifyValue);
-						printf("%s\r\n",info_buf);
-						flush_stdout();
+		vTaskList(info_buf);
+		if(NULL != MutexSemaphore)
+		{
+			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+			{
+				printf("%s,TaskList Len:%d, %08X\r\n",
+						pcTaskGetName(NULL),
+						strlen(info_buf),
+						NotifyValue);
+				printf("%s\r\n",info_buf);
 
-						xSemaphoreGive(MutexSemaphore);
-					}
-				}
+				xSemaphoreGive(MutexSemaphore);
+			}
+		}
 	}
 }
 
@@ -421,7 +445,7 @@ void led1_task(void *pvParameters)
 	while(1)
 	{
 		//    	vParTestToggleLED(1);
-//		vTaskDelay(4000 / portTICK_PERIOD_MS);
+		//		vTaskDelay(4000 / portTICK_PERIOD_MS);
 		if(EventGroupHandler!=NULL)
 		{
 			EventValue = xEventGroupGetBits(EventGroupHandler);
@@ -429,9 +453,9 @@ void led1_task(void *pvParameters)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-//					printf("<%s,ev:%08X\n",
-//							pcTaskGetName(NULL),
-//							(uint32_t)EventValue);
+					//					printf("<%s,ev:%08X\n",
+					//							pcTaskGetName(NULL),
+					//							(uint32_t)EventValue);
 					xSemaphoreGive(MutexSemaphore);
 				}
 			}
@@ -447,9 +471,9 @@ void led1_task(void *pvParameters)
 			{
 				if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
 				{
-//					printf(">%s,ev:%08X\n",
-//							pcTaskGetName(NULL),
-//							(uint32_t)EventValue);
+					//					printf(">%s,ev:%08X\n",
+					//							pcTaskGetName(NULL),
+					//							(uint32_t)EventValue);
 					xSemaphoreGive(MutexSemaphore);
 				}
 			}
@@ -462,27 +486,32 @@ void led1_task(void *pvParameters)
 		}
 
 		uint32_t NotifyValue=ulTaskNotifyTake( pdTRUE, /* Clear the notification value on exit. */
-		portMAX_DELAY );/* Block indefinitely. */
+				portMAX_DELAY );/* Block indefinitely. */
 
-				vTaskList(info_buf);
-				if(NULL != MutexSemaphore)
-				{
-					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
-					{
-						printf("%s,TaskList Len:%d, %08X\r\n",
-								pcTaskGetName(NULL),
-								strlen(info_buf),
-								NotifyValue);
-						printf("%s\r\n",info_buf);
-						flush_stdout();
+		vTaskList(info_buf);
+		if(NULL != MutexSemaphore)
+		{
+			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+			{
+				printf("%s,TaskList Len:%d, %08X\r\n",
+						pcTaskGetName(NULL),
+						strlen(info_buf),
+						NotifyValue);
+				printf("%s\r\n",info_buf);
 
-						xSemaphoreGive(MutexSemaphore);
-					}
-				}
+				xSemaphoreGive(MutexSemaphore);
+			}
+		}
 
 
 	}
 }
+
+typedef struct _Hnd_arg
+{
+	void (*hnd_handler) (int);
+	int hnd_arg;
+} Hnd_arg;
 
 void print_task(void *pvParameters)
 {
@@ -490,7 +519,7 @@ void print_task(void *pvParameters)
 
 	while(1)
 	{
-		vTaskDelay(4000 / portTICK_PERIOD_MS);
+		//		vTaskDelay(4000 / portTICK_PERIOD_MS);
 		//		if(NULL != Message_Queue)
 		//		{
 		//			uint32_t tmpU32;
@@ -511,43 +540,158 @@ void print_task(void *pvParameters)
 		//		}
 
 		uint32_t NotifyValue = ulTaskNotifyTake( pdTRUE, /* Clear the notification value on exit. */
-		portMAX_DELAY );/* Block indefinitely. */
+				portMAX_DELAY );/* Block indefinitely. */
 
-				vTaskList(info_buf);
-				if(NULL != MutexSemaphore)
-				{
-					if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
-					{
-						printf("%s,TaskList Len:%d, %08X\r\n",
-								pcTaskGetName(NULL),
-								strlen(info_buf),
-								NotifyValue);
-						printf("%s\r\n",info_buf);
-						flush_stdout();
+		vTaskList(info_buf);
+		if(NULL != MutexSemaphore)
+		{
+			if(pdTRUE == xSemaphoreTake(MutexSemaphore, portMAX_DELAY))
+			{
+				printf("%s,TaskList Len:%d, %08X\r\n",
+						pcTaskGetName(NULL),
+						strlen(info_buf),
+						NotifyValue);
+				printf("%s\r\n",info_buf);
 
-						vTaskGetRunTimeStats(info_buf);
-						printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
-						printf("%s\r\n",info_buf);
-						flush_stdout();
+				vTaskGetRunTimeStats(info_buf);
+				printf("RunTimeStats Len:%d\r\n", strlen(info_buf));
+				printf("%s\r\n",info_buf);
 
-						uint8_t* buffer;
-						uint32_t tmpA, tmpB, tmpC, tmpD;
-						tmpA = xPortGetFreeHeapSize();
-						buffer = pvPortMalloc(1024);
-						tmpB = xPortGetFreeHeapSize();
-						if(buffer!=NULL)
-						{
-							vPortFree(buffer);
-							tmpC = xPortGetFreeHeapSize();
-							buffer = NULL;
-						}
+				//				uint8_t* buffer;
+				//				uint32_t tmpA, tmpB, tmpC, tmpD;
+				//				tmpA = xPortGetFreeHeapSize();
+				//				buffer = pvPortMalloc(1024);
+				//				tmpB = xPortGetFreeHeapSize();
+				//				if(buffer!=NULL)
+				//				{
+				//					vPortFree(buffer);
+				//					tmpC = xPortGetFreeHeapSize();
+				//					buffer = NULL;
+				//				}
+				//				printf("FreeMem3:\t %u %u %u\n", tmpA, tmpB, tmpC);
 
-						printf("FreeMem3:\t %u %u %u\n", tmpA, tmpB, tmpC);
+				//				printf("STM_CLC\t%08X\t:%08X\n\n", &STM_CLC, STM_CLC.reg);
+				//				printf("STM_ID\t%08X\t:%08X\n\n", &STM_ID, STM_ID.reg);
+				//				printf("STM_TIM0\t%08X\t:%08X\n\n", &STM_TIM0, STM_TIM0.reg);
+				//				printf("STM_TIM1\t%08X\t:%08X\n\n", &STM_TIM1, STM_TIM1.reg);
+				//				printf("STM_TIM2\t%08X\t:%08X\n\n", &STM_TIM2, STM_TIM2.reg);
+				//				printf("STM_TIM3\t%08X\t:%08X\n\n", &STM_TIM3, STM_TIM3.reg);
+				//				printf("STM_TIM4\t%08X\t:%08X\n\n", &STM_TIM4, STM_TIM4.reg);
+				//				printf("STM_TIM5\t%08X\t:%08X\n\n", &STM_TIM5, STM_TIM5.reg);
+				//				printf("STM_TIM6\t%08X\t:%08X\n\n", &STM_TIM6, STM_TIM6.reg);
+				//				printf("STM_CAP\t%08X\t:%08X\n\n", &STM_CAP, STM_CAP.reg);
+				//				printf("STM_CMP0\t%08X\t:%08X\n\n", &STM_CMP0, STM_CMP0.reg);
+				//				printf("STM_CMP1\t%08X\t:%08X\n\n", &STM_CMP1, STM_CMP1.reg);
+				//				printf("STM_CMCON\t%08X\t:%08X\n\n", &STM_CMCON, STM_CMCON.reg);
+				//				printf("STM_ICR\t%08X\t:%08X\n\n", &STM_ICR, STM_ICR.reg);
+				//				printf("STM_ISRR\t%08X\t:%08X\n\n", &STM_ISRR, STM_ISRR.reg);
+				//				printf("STM_SRC1\t%08X\t:%08X\n\n", &STM_SRC1, STM_SRC1.reg);
+				//				printf("STM_SRC0\t%08X\t:%08X\n\n", &STM_SRC0, STM_SRC0.reg);
 
-						xSemaphoreGive(MutexSemaphore);
-					}
-				}
+				printf("CPUID\t%08X\t:%08X\n\n", &CPU_ID, _mfcr(CPU_ID_ADDR));
+				printf("CCTRL\t%08X\t:%08X\n\n", &CCTRL, _mfcr(CCTRL_ADDR));
+				printf("CCNT\t%08X\t:%08X\n\n", &CCNT, _mfcr(CCNT_ADDR));
+				printf("ICNT\t%08X\t:%08X\n\n", &ICNT, _mfcr(ICNT_ADDR));
+				printf("M1CNT\t%08X\t:%08X\n\n", &M1CNT, _mfcr(M1CNT_ADDR));
+				printf("M2CNT\t%08X\t:%08X\n\n", &M2CNT, _mfcr(M2CNT_ADDR));
+				printf("M3CNT\t%08X\t:%08X\n\n", &M3CNT, _mfcr(M3CNT_ADDR));
 
+				extern void _start(void);
+				printf("_start\t:%08X\n\n", (uint32_t)_start);
+				extern void __EBMCFG(void);
+				printf("__EBMCFG\t:%08X\n\n", (uint32_t)__EBMCFG);
+
+				extern void __USTACK_BEGIN(void);
+				printf("__USTACK_BEGIN\t:%08X\n\n", (uint32_t)__USTACK_BEGIN);
+				extern void __USTACK(void);
+				printf("__USTACK\t:%08X\n\n", (uint32_t)__USTACK);
+				extern void __USTACK_SIZE(void);
+				printf("__USTACK_SIZE\t:%08X\n\n", (uint32_t)__USTACK_SIZE);
+				extern void __USTACK_END(void);
+				printf("__USTACK_END\t:%08X\n\n", (uint32_t)__USTACK_END);
+
+				extern void __ISTACK_BEGIN(void);
+				printf("__ISTACK_BEGIN\t:%08X\n\n", (uint32_t)__ISTACK_BEGIN);
+				extern void __ISTACK(void);
+				printf("__ISTACK\t:%08X\n\n", (uint32_t)__ISTACK);
+				extern void __ISTACK_SIZE(void);
+				printf("__ISTACK_SIZE\t:%08X\n\n", (uint32_t)__ISTACK_SIZE);
+				extern void __ISTACK_END(void);
+				printf("__ISTACK_END\t:%08X\n\n", (uint32_t)__ISTACK_END);
+
+				extern void __HEAP_BEGIN(void);
+				printf("__HEAP_BEGIN\t:%08X\n\n", (uint32_t)__HEAP_BEGIN);
+				extern void __HEAP(void);
+				printf("__HEAP\t:%08X\n\n", (uint32_t)__HEAP);
+				extern void __HEAP_SIZE(void);
+				printf("__HEAP_SIZE\t:%08X\n\n", (uint32_t)__HEAP_SIZE);
+				extern void __HEAP_END(void);
+				printf("__HEAP_END\t:%08X\n\n", (uint32_t)__HEAP_END);
+
+				extern void __CSA_BEGIN(void);
+				printf("__CSA_BEGIN\t:%08X\n\n", (uint32_t)__CSA_BEGIN);
+				extern void __CSA(void);
+				printf("__CSA\t:%08X\n\n", (uint32_t)__CSA);
+				extern void __CSA_SIZE(void);
+				printf("__CSA_SIZE\t:%08X\n\n", (uint32_t)__CSA_SIZE);
+				extern void __CSA_END(void);
+				printf("__CSA_END\t:%08X\n\n", (uint32_t)__CSA_END);
+
+				extern void _SMALL_DATA_(void);
+				printf("_SMALL_DATA_\t:%08X\n\n", (uint32_t)_SMALL_DATA_);
+				extern void _SMALL_DATA2_(void);
+				printf("_SMALL_DATA2_\t:%08X\n\n", (uint32_t)_SMALL_DATA2_);
+
+				extern void boardSetupTab(void);
+				printf("boardSetupTab\t:%08X\n\n", (uint32_t)boardSetupTab);
+				extern void boardSetupTabSize(void);
+				printf("boardSetupTabSize\t:%08X\n\n", (uint32_t)boardSetupTabSize);
+				extern void __board_init(void);
+				printf("__board_init\t:%08X\n\n", (uint32_t)__board_init);
+				extern void first_trap_table(void);
+				printf("first_trap_table\t:%08X\n\n", (uint32_t)first_trap_table);
+
+				printf("BIV\t%08X\t:%08X\n\n", &BIV, _mfcr(BIV_ADDR));
+				extern void TriCore_int_table(void);
+				printf("TriCore_int_table\t:%08X\n\n", (uint32_t)TriCore_int_table);
+
+				extern void __interrupt_1(void);
+				printf("__interrupt_1\t:%08X\n\n", (uint32_t)__interrupt_1);
+				extern void ___interrupt_1(void);
+				printf("___interrupt_1\t:%08X\n\n", (uint32_t)___interrupt_1);
+				extern void __interrupt_2(void);
+				printf("__interrupt_2\t:%08X\n\n", (uint32_t)__interrupt_2);
+
+				extern Hnd_arg Cdisptab[MAX_INTRS];
+				printf("Soft Interrupt vector table %08X:%u * %u = %u\n",
+						(uint32_t)Cdisptab,
+						sizeof(Cdisptab[0]),
+						MAX_INTRS,
+						sizeof(Cdisptab));
+
+				printf("BTV\t%08X\t:%08X\n\n", &BTV, _mfcr(BTV_ADDR));
+				extern void TriCore_trap_table(void);
+				printf("TriCore_trap_table\t:%08X\n\n", (uint32_t)TriCore_trap_table);
+
+				extern void __trap_0(void);
+				printf("__trap_0\t:%08X\n\n", (uint32_t)__trap_0);
+				extern void __trap_1(void);
+				printf("__trap_1\t:%08X\n\n", (uint32_t)__trap_1);
+				extern void __trap_6(void);
+				printf("__trap_6\t:%08X\n\n", (uint32_t)__trap_6);
+				extern void ___trap_6(void);
+				printf("___trap_6\t:%08X\n\n", (uint32_t)___trap_6);
+
+				extern void (*Tdisptab[MAX_TRAPS]) (int tin);
+				printf("Soft Trap vector table %08X:%u * %u = %u\n",
+						(uint32_t)Tdisptab,
+						sizeof(Tdisptab[0]),
+						MAX_TRAPS,
+						sizeof(Tdisptab));
+
+				xSemaphoreGive(MutexSemaphore);
+			}
+		}
 
 		//        if(NULL != CountSemaphore)
 		//        {
@@ -568,24 +712,6 @@ void print_task(void *pvParameters)
 		//        		printf("SemaCnt %08X: %d\n", (uint32_t)&CountSemaphore, tmp_sema_cnt);
 		//        	}
 		//        }
-
-		//		printf("STM_CLC\t%08X\t:%08X\n\n", &STM_CLC, STM_CLC.reg);
-		//		printf("STM_ID\t%08X\t:%08X\n\n", &STM_ID, STM_ID.reg);
-		//		printf("STM_TIM0\t%08X\t:%08X\n\n", &STM_TIM0, STM_TIM0.reg);
-		//		printf("STM_TIM1\t%08X\t:%08X\n\n", &STM_TIM1, STM_TIM1.reg);
-		//		printf("STM_TIM2\t%08X\t:%08X\n\n", &STM_TIM2, STM_TIM2.reg);
-		//		printf("STM_TIM3\t%08X\t:%08X\n\n", &STM_TIM3, STM_TIM3.reg);
-		//		printf("STM_TIM4\t%08X\t:%08X\n\n", &STM_TIM4, STM_TIM4.reg);
-		//		printf("STM_TIM5\t%08X\t:%08X\n\n", &STM_TIM5, STM_TIM5.reg);
-		//		printf("STM_TIM6\t%08X\t:%08X\n\n", &STM_TIM6, STM_TIM6.reg);
-		//		printf("STM_CAP\t%08X\t:%08X\n\n", &STM_CAP, STM_CAP.reg);
-		//		printf("STM_CMP0\t%08X\t:%08X\n\n", &STM_CMP0, STM_CMP0.reg);
-		//		printf("STM_CMP1\t%08X\t:%08X\n\n", &STM_CMP1, STM_CMP1.reg);
-		//		printf("STM_CMCON\t%08X\t:%08X\n\n", &STM_CMCON, STM_CMCON.reg);
-		//		printf("STM_ICR\t%08X\t:%08X\n\n", &STM_ICR, STM_ICR.reg);
-		//		printf("STM_ISRR\t%08X\t:%08X\n\n", &STM_ISRR, STM_ISRR.reg);
-		//		printf("STM_SRC1\t%08X\t:%08X\n\n", &STM_SRC1, STM_SRC1.reg);
-		//		printf("STM_SRC0\t%08X\t:%08X\n\n", &STM_SRC0, STM_SRC0.reg);
 	}
 }
 

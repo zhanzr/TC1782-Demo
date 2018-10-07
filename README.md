@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 18.
+FreeRTOS Example 19.
 
 Content:
-        Task Notification API test.
 
+	Demo for Interrupt , Trap , UStack, IStack, Heap, CSA, Startup and so on.
 

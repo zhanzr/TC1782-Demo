@@ -69,12 +69,6 @@ void ConfigureTimeForRunTimeStats(void)
 			STM_SRC1.bits.SRE = 1UL;
 
 			/* Enable the Interrupt. */
-			STM_ISRR.reg &= ~( 0x03UL << 2UL );
-			STM_ISRR.reg |= ( 0x1UL << 2UL );
-			STM_ICR.reg &= ~( 0x07UL << 4UL );
-			STM_ICR.reg |= ( 0x5UL << 4UL );
-
-			/* Enable the Interrupt. */
 			STM_ISRR.reg &= ~( 0x0CUL );
 			STM_ISRR.bits.CMP1IRR = 1;
 			STM_ICR.reg &= ~( 0x70UL );
