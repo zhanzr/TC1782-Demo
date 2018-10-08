@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 19.
+FreeRTOS Example 20.
 
 Content:
 
-	Demo for Interrupt , Trap , UStack, IStack, Heap, CSA, Startup and so on.
+	Demo for Interrupt.
 

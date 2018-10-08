@@ -588,68 +588,68 @@ void print_task(void *pvParameters)
 				//				printf("STM_SRC1\t%08X\t:%08X\n\n", &STM_SRC1, STM_SRC1.reg);
 				//				printf("STM_SRC0\t%08X\t:%08X\n\n", &STM_SRC0, STM_SRC0.reg);
 
-				printf("CPUID\t%08X\t:%08X\n\n", &CPU_ID, _mfcr(CPU_ID_ADDR));
-				printf("CCTRL\t%08X\t:%08X\n\n", &CCTRL, _mfcr(CCTRL_ADDR));
-				printf("CCNT\t%08X\t:%08X\n\n", &CCNT, _mfcr(CCNT_ADDR));
-				printf("ICNT\t%08X\t:%08X\n\n", &ICNT, _mfcr(ICNT_ADDR));
-				printf("M1CNT\t%08X\t:%08X\n\n", &M1CNT, _mfcr(M1CNT_ADDR));
-				printf("M2CNT\t%08X\t:%08X\n\n", &M2CNT, _mfcr(M2CNT_ADDR));
-				printf("M3CNT\t%08X\t:%08X\n\n", &M3CNT, _mfcr(M3CNT_ADDR));
-
-				extern void _start(void);
-				printf("_start\t:%08X\n\n", (uint32_t)_start);
-				extern void __EBMCFG(void);
-				printf("__EBMCFG\t:%08X\n\n", (uint32_t)__EBMCFG);
-
-				extern void __USTACK_BEGIN(void);
-				printf("__USTACK_BEGIN\t:%08X\n\n", (uint32_t)__USTACK_BEGIN);
-				extern void __USTACK(void);
-				printf("__USTACK\t:%08X\n\n", (uint32_t)__USTACK);
-				extern void __USTACK_SIZE(void);
-				printf("__USTACK_SIZE\t:%08X\n\n", (uint32_t)__USTACK_SIZE);
-				extern void __USTACK_END(void);
-				printf("__USTACK_END\t:%08X\n\n", (uint32_t)__USTACK_END);
-
-				extern void __ISTACK_BEGIN(void);
-				printf("__ISTACK_BEGIN\t:%08X\n\n", (uint32_t)__ISTACK_BEGIN);
-				extern void __ISTACK(void);
-				printf("__ISTACK\t:%08X\n\n", (uint32_t)__ISTACK);
-				extern void __ISTACK_SIZE(void);
-				printf("__ISTACK_SIZE\t:%08X\n\n", (uint32_t)__ISTACK_SIZE);
-				extern void __ISTACK_END(void);
-				printf("__ISTACK_END\t:%08X\n\n", (uint32_t)__ISTACK_END);
-
-				extern void __HEAP_BEGIN(void);
-				printf("__HEAP_BEGIN\t:%08X\n\n", (uint32_t)__HEAP_BEGIN);
-				extern void __HEAP(void);
-				printf("__HEAP\t:%08X\n\n", (uint32_t)__HEAP);
-				extern void __HEAP_SIZE(void);
-				printf("__HEAP_SIZE\t:%08X\n\n", (uint32_t)__HEAP_SIZE);
-				extern void __HEAP_END(void);
-				printf("__HEAP_END\t:%08X\n\n", (uint32_t)__HEAP_END);
-
-				extern void __CSA_BEGIN(void);
-				printf("__CSA_BEGIN\t:%08X\n\n", (uint32_t)__CSA_BEGIN);
-				extern void __CSA(void);
-				printf("__CSA\t:%08X\n\n", (uint32_t)__CSA);
-				extern void __CSA_SIZE(void);
-				printf("__CSA_SIZE\t:%08X\n\n", (uint32_t)__CSA_SIZE);
-				extern void __CSA_END(void);
-				printf("__CSA_END\t:%08X\n\n", (uint32_t)__CSA_END);
-
-				extern void _SMALL_DATA_(void);
-				printf("_SMALL_DATA_\t:%08X\n\n", (uint32_t)_SMALL_DATA_);
-				extern void _SMALL_DATA2_(void);
-				printf("_SMALL_DATA2_\t:%08X\n\n", (uint32_t)_SMALL_DATA2_);
-
-				extern void boardSetupTab(void);
-				printf("boardSetupTab\t:%08X\n\n", (uint32_t)boardSetupTab);
-				extern void boardSetupTabSize(void);
-				printf("boardSetupTabSize\t:%08X\n\n", (uint32_t)boardSetupTabSize);
-				extern void __board_init(void);
-				printf("__board_init\t:%08X\n\n", (uint32_t)__board_init);
-				extern void first_trap_table(void);
-				printf("first_trap_table\t:%08X\n\n", (uint32_t)first_trap_table);
+//				printf("CPUID\t%08X\t:%08X\n\n", &CPU_ID, _mfcr(CPU_ID_ADDR));
+//				printf("CCTRL\t%08X\t:%08X\n\n", &CCTRL, _mfcr(CCTRL_ADDR));
+//				printf("CCNT\t%08X\t:%08X\n\n", &CCNT, _mfcr(CCNT_ADDR));
+//				printf("ICNT\t%08X\t:%08X\n\n", &ICNT, _mfcr(ICNT_ADDR));
+//				printf("M1CNT\t%08X\t:%08X\n\n", &M1CNT, _mfcr(M1CNT_ADDR));
+//				printf("M2CNT\t%08X\t:%08X\n\n", &M2CNT, _mfcr(M2CNT_ADDR));
+//				printf("M3CNT\t%08X\t:%08X\n\n", &M3CNT, _mfcr(M3CNT_ADDR));
+//
+//				extern void _start(void);
+//				printf("_start\t:%08X\n\n", (uint32_t)_start);
+//				extern void __EBMCFG(void);
+//				printf("__EBMCFG\t:%08X\n\n", (uint32_t)__EBMCFG);
+//
+//				extern void __USTACK_BEGIN(void);
+//				printf("__USTACK_BEGIN\t:%08X\n\n", (uint32_t)__USTACK_BEGIN);
+//				extern void __USTACK(void);
+//				printf("__USTACK\t:%08X\n\n", (uint32_t)__USTACK);
+//				extern void __USTACK_SIZE(void);
+//				printf("__USTACK_SIZE\t:%08X\n\n", (uint32_t)__USTACK_SIZE);
+//				extern void __USTACK_END(void);
+//				printf("__USTACK_END\t:%08X\n\n", (uint32_t)__USTACK_END);
+//
+//				extern void __ISTACK_BEGIN(void);
+//				printf("__ISTACK_BEGIN\t:%08X\n\n", (uint32_t)__ISTACK_BEGIN);
+//				extern void __ISTACK(void);
+//				printf("__ISTACK\t:%08X\n\n", (uint32_t)__ISTACK);
+//				extern void __ISTACK_SIZE(void);
+//				printf("__ISTACK_SIZE\t:%08X\n\n", (uint32_t)__ISTACK_SIZE);
+//				extern void __ISTACK_END(void);
+//				printf("__ISTACK_END\t:%08X\n\n", (uint32_t)__ISTACK_END);
+//
+//				extern void __HEAP_BEGIN(void);
+//				printf("__HEAP_BEGIN\t:%08X\n\n", (uint32_t)__HEAP_BEGIN);
+//				extern void __HEAP(void);
+//				printf("__HEAP\t:%08X\n\n", (uint32_t)__HEAP);
+//				extern void __HEAP_SIZE(void);
+//				printf("__HEAP_SIZE\t:%08X\n\n", (uint32_t)__HEAP_SIZE);
+//				extern void __HEAP_END(void);
+//				printf("__HEAP_END\t:%08X\n\n", (uint32_t)__HEAP_END);
+//
+//				extern void __CSA_BEGIN(void);
+//				printf("__CSA_BEGIN\t:%08X\n\n", (uint32_t)__CSA_BEGIN);
+//				extern void __CSA(void);
+//				printf("__CSA\t:%08X\n\n", (uint32_t)__CSA);
+//				extern void __CSA_SIZE(void);
+//				printf("__CSA_SIZE\t:%08X\n\n", (uint32_t)__CSA_SIZE);
+//				extern void __CSA_END(void);
+//				printf("__CSA_END\t:%08X\n\n", (uint32_t)__CSA_END);
+//
+//				extern void _SMALL_DATA_(void);
+//				printf("_SMALL_DATA_\t:%08X\n\n", (uint32_t)_SMALL_DATA_);
+//				extern void _SMALL_DATA2_(void);
+//				printf("_SMALL_DATA2_\t:%08X\n\n", (uint32_t)_SMALL_DATA2_);
+//
+//				extern void boardSetupTab(void);
+//				printf("boardSetupTab\t:%08X\n\n", (uint32_t)boardSetupTab);
+//				extern void boardSetupTabSize(void);
+//				printf("boardSetupTabSize\t:%08X\n\n", (uint32_t)boardSetupTabSize);
+//				extern void __board_init(void);
+//				printf("__board_init\t:%08X\n\n", (uint32_t)__board_init);
+//				extern void first_trap_table(void);
+//				printf("first_trap_table\t:%08X\n\n", (uint32_t)first_trap_table);
 
 				printf("BIV\t%08X\t:%08X\n\n", &BIV, _mfcr(BIV_ADDR));
 				extern void TriCore_int_table(void);
@@ -669,25 +669,25 @@ void print_task(void *pvParameters)
 						MAX_INTRS,
 						sizeof(Cdisptab));
 
-				printf("BTV\t%08X\t:%08X\n\n", &BTV, _mfcr(BTV_ADDR));
-				extern void TriCore_trap_table(void);
-				printf("TriCore_trap_table\t:%08X\n\n", (uint32_t)TriCore_trap_table);
-
-				extern void __trap_0(void);
-				printf("__trap_0\t:%08X\n\n", (uint32_t)__trap_0);
-				extern void __trap_1(void);
-				printf("__trap_1\t:%08X\n\n", (uint32_t)__trap_1);
-				extern void __trap_6(void);
-				printf("__trap_6\t:%08X\n\n", (uint32_t)__trap_6);
-				extern void ___trap_6(void);
-				printf("___trap_6\t:%08X\n\n", (uint32_t)___trap_6);
-
-				extern void (*Tdisptab[MAX_TRAPS]) (int tin);
-				printf("Soft Trap vector table %08X:%u * %u = %u\n",
-						(uint32_t)Tdisptab,
-						sizeof(Tdisptab[0]),
-						MAX_TRAPS,
-						sizeof(Tdisptab));
+//				printf("BTV\t%08X\t:%08X\n\n", &BTV, _mfcr(BTV_ADDR));
+//				extern void TriCore_trap_table(void);
+//				printf("TriCore_trap_table\t:%08X\n\n", (uint32_t)TriCore_trap_table);
+//
+//				extern void __trap_0(void);
+//				printf("__trap_0\t:%08X\n\n", (uint32_t)__trap_0);
+//				extern void __trap_1(void);
+//				printf("__trap_1\t:%08X\n\n", (uint32_t)__trap_1);
+//				extern void __trap_6(void);
+//				printf("__trap_6\t:%08X\n\n", (uint32_t)__trap_6);
+//				extern void ___trap_6(void);
+//				printf("___trap_6\t:%08X\n\n", (uint32_t)___trap_6);
+//
+//				extern void (*Tdisptab[MAX_TRAPS]) (int tin);
+//				printf("Soft Trap vector table %08X:%u * %u = %u\n",
+//						(uint32_t)Tdisptab,
+//						sizeof(Tdisptab[0]),
+//						MAX_TRAPS,
+//						sizeof(Tdisptab));
 
 				xSemaphoreGive(MutexSemaphore);
 			}
