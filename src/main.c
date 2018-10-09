@@ -651,43 +651,43 @@ void print_task(void *pvParameters)
 //				extern void first_trap_table(void);
 //				printf("first_trap_table\t:%08X\n\n", (uint32_t)first_trap_table);
 
-				printf("BIV\t%08X\t:%08X\n\n", &BIV, _mfcr(BIV_ADDR));
-				extern void TriCore_int_table(void);
-				printf("TriCore_int_table\t:%08X\n\n", (uint32_t)TriCore_int_table);
-
-				extern void __interrupt_1(void);
-				printf("__interrupt_1\t:%08X\n\n", (uint32_t)__interrupt_1);
-				extern void ___interrupt_1(void);
-				printf("___interrupt_1\t:%08X\n\n", (uint32_t)___interrupt_1);
-				extern void __interrupt_2(void);
-				printf("__interrupt_2\t:%08X\n\n", (uint32_t)__interrupt_2);
-
-				extern Hnd_arg Cdisptab[MAX_INTRS];
-				printf("Soft Interrupt vector table %08X:%u * %u = %u\n",
-						(uint32_t)Cdisptab,
-						sizeof(Cdisptab[0]),
-						MAX_INTRS,
-						sizeof(Cdisptab));
-
-//				printf("BTV\t%08X\t:%08X\n\n", &BTV, _mfcr(BTV_ADDR));
-//				extern void TriCore_trap_table(void);
-//				printf("TriCore_trap_table\t:%08X\n\n", (uint32_t)TriCore_trap_table);
+//				printf("BIV\t%08X\t:%08X\n\n", &BIV, _mfcr(BIV_ADDR));
+//				extern void TriCore_int_table(void);
+//				printf("TriCore_int_table\t:%08X\n\n", (uint32_t)TriCore_int_table);
 //
-//				extern void __trap_0(void);
-//				printf("__trap_0\t:%08X\n\n", (uint32_t)__trap_0);
-//				extern void __trap_1(void);
-//				printf("__trap_1\t:%08X\n\n", (uint32_t)__trap_1);
-//				extern void __trap_6(void);
-//				printf("__trap_6\t:%08X\n\n", (uint32_t)__trap_6);
-//				extern void ___trap_6(void);
-//				printf("___trap_6\t:%08X\n\n", (uint32_t)___trap_6);
+//				extern void __interrupt_1(void);
+//				printf("__interrupt_1\t:%08X\n\n", (uint32_t)__interrupt_1);
+//				extern void ___interrupt_1(void);
+//				printf("___interrupt_1\t:%08X\n\n", (uint32_t)___interrupt_1);
+//				extern void __interrupt_2(void);
+//				printf("__interrupt_2\t:%08X\n\n", (uint32_t)__interrupt_2);
 //
-//				extern void (*Tdisptab[MAX_TRAPS]) (int tin);
-//				printf("Soft Trap vector table %08X:%u * %u = %u\n",
-//						(uint32_t)Tdisptab,
-//						sizeof(Tdisptab[0]),
-//						MAX_TRAPS,
-//						sizeof(Tdisptab));
+//				extern Hnd_arg Cdisptab[MAX_INTRS];
+//				printf("Soft Interrupt vector table %08X:%u * %u = %u\n",
+//						(uint32_t)Cdisptab,
+//						sizeof(Cdisptab[0]),
+//						MAX_INTRS,
+//						sizeof(Cdisptab));
+
+				printf("BTV\t%08X\t:%08X\n\n", &BTV, _mfcr(BTV_ADDR));
+				extern void TriCore_trap_table(void);
+				printf("TriCore_trap_table\t:%08X\n\n", (uint32_t)TriCore_trap_table);
+
+				extern void __trap_0(void);
+				printf("__trap_0\t:%08X\n\n", (uint32_t)__trap_0);
+				extern void __trap_1(void);
+				printf("__trap_1\t:%08X\n\n", (uint32_t)__trap_1);
+				extern void __trap_6(void);
+				printf("__trap_6\t:%08X\n\n", (uint32_t)__trap_6);
+				extern void ___trap_6(void);
+				printf("___trap_6\t:%08X\n\n", (uint32_t)___trap_6);
+
+				extern void (*Tdisptab[MAX_TRAPS]) (int tin);
+				printf("Soft Trap vector table %08X:%u * %u = %u\n",
+						(uint32_t)Tdisptab,
+						sizeof(Tdisptab[0]),
+						MAX_TRAPS,
+						sizeof(Tdisptab));
 
 				xSemaphoreGive(MutexSemaphore);
 			}

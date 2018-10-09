@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 20.
+FreeRTOS Example 21.
 
 Content:
 
-	Demo for Interrupt.
+	Demo for Trap.
 
