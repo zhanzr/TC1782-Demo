@@ -42,6 +42,12 @@
 #include <machine/cint.h>
 #include <machine/wdtcon.h>
 
+typedef struct _Hnd_arg
+{
+	void (*hnd_handler) (int);
+	int hnd_arg;
+} Hnd_arg;
+
 #define MESSAGE_Q_NUM   2
 QueueHandle_t Message_Queue;
 
@@ -189,6 +195,74 @@ void enable_performance_cnt(void)
 	lock_wdtcon();
 }
 
+void simple_delay(uint32_t t)
+{
+	uint64_t d = t*10000;
+	while(--d)
+	{
+		_nop();
+	}
+}
+
+uint32_t g_tmp1;
+uint32_t g_tmp2;
+uint32_t g_tmp3;
+uint32_t g_tmp4;
+uint32_t g_tmp_ret;
+
+uint32_t* Ifx_Get_A10(void);
+
+void test_sp_1(void)
+{
+	g_tmp2 = (uint32_t)Ifx_Get_A10();
+
+	return;
+}
+
+uint32_t test_sp_2(void)
+{
+	volatile uint32_t tmp_var = 100;
+	tmp_var *= 2;
+
+	g_tmp3 = (uint32_t)Ifx_Get_A10();
+
+	return tmp_var;
+}
+
+
+void no_rtos_loop(void)
+{
+	while(1)
+	{
+		printf("No RTOS Loop. CPU:%u Hz Tricore %04X\n",
+				get_cpu_frequency(),
+				__TRICORE_NAME__
+		);
+
+		g_tmp1 = (uint32_t)Ifx_Get_A10();
+		test_sp_1();
+		g_tmp_ret = test_sp_2();
+		g_tmp4 = (uint32_t)Ifx_Get_A10();
+
+		printf("%08X, %08X, %08X, %08X, %08X\n",
+				g_tmp1,
+				g_tmp2,
+				g_tmp3,
+				g_tmp4,
+				g_tmp_ret);
+
+		LEDTOGGLE(0);
+		LEDTOGGLE(1);
+		//			LEDTOGGLE(2);
+		//			LEDTOGGLE(3);
+		//			LEDTOGGLE(4);
+		//			LEDTOGGLE(5);
+		//			LEDTOGGLE(6);
+		//			LEDTOGGLE(7);
+
+		simple_delay(1000);
+	}
+}
 
 int main(void)
 {
@@ -216,7 +290,26 @@ int main(void)
 	/* Setup the hardware for use with the TriCore evaluation board. */
 	prvSetupHardware();
 
-	//	ConfigureTimeForRunTimeStats();
+// Stack Experimentation
+	extern void __USTACK_BEGIN(void);
+	printf("__USTACK_BEGIN\t:%08X\n\n", (uint32_t)__USTACK_BEGIN);
+	extern void __USTACK(void);
+	printf("__USTACK\t:%08X\n\n", (uint32_t)__USTACK);
+	extern void __USTACK_SIZE(void);
+	printf("__USTACK_SIZE\t:%08X\n\n", (uint32_t)__USTACK_SIZE);
+	extern void __USTACK_END(void);
+	printf("__USTACK_END\t:%08X\n\n", (uint32_t)__USTACK_END);
+
+	extern void __ISTACK_BEGIN(void);
+	printf("__ISTACK_BEGIN\t:%08X\n\n", (uint32_t)__ISTACK_BEGIN);
+	extern void __ISTACK(void);
+	printf("__ISTACK\t:%08X\n\n", (uint32_t)__ISTACK);
+	extern void __ISTACK_SIZE(void);
+	printf("__ISTACK_SIZE\t:%08X\n\n", (uint32_t)__ISTACK_SIZE);
+	extern void __ISTACK_END(void);
+	printf("__ISTACK_END\t:%08X\n\n", (uint32_t)__ISTACK_END);
+
+	no_rtos_loop();
 
 	/* Start standard demo/test application flash tasks.  See the comments at
 	the top of this file.  The LED flash tasks are always created.  The other
@@ -245,31 +338,8 @@ int main(void)
 	is too small for the idle and/or timer tasks to be created within
 	vTaskStartScheduler(). */
 
-	while(1)
-	{
-		//		//		c = _in_uart();
-		//		/* check flag set by timer ISR in every 100 ms */
-		//
-		//		if(g_blink_flag)
-		//		{
-		//			printf("Failed. @FPI:%u Hz CPU:%u Hz %u CoreType:%04X\n",
-		//					get_fpi_frequency(),
-		//					get_cpu_frequency(),
-		//					g_ticks,
-		//					__TRICORE_CORE__
-		//			);
-		//
-		//			LEDTOGGLE(0);
-		//			LEDTOGGLE(1);
-		//			//			LEDTOGGLE(2);
-		//			//			LEDTOGGLE(3);
-		//			//			LEDTOGGLE(4);
-		//			//			LEDTOGGLE(5);
-		//			//			LEDTOGGLE(6);
-		//			//			LEDTOGGLE(7);
-		//			g_blink_flag = false;
-		//		}
-	}
+//	no_rtos_loop();
+
 	return EXIT_SUCCESS;
 }
 /*-----------------------------------------------------------*/
@@ -506,12 +576,6 @@ void led1_task(void *pvParameters)
 
 	}
 }
-
-typedef struct _Hnd_arg
-{
-	void (*hnd_handler) (int);
-	int hnd_arg;
-} Hnd_arg;
 
 void print_task(void *pvParameters)
 {
