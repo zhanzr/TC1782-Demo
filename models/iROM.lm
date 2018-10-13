@@ -75,7 +75,7 @@
       <Reservation Description="Section for istack" Name=".istack" Size="256" Alignment="8" Unit="B" Grows="downwards">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
-      <Reservation Description="Section for heap" Name=".heap" Size="4" Alignment="8" Unit="KB">
+      <Reservation Description="Section for heap" Name=".heap" Size="2" Alignment="8" Unit="KB">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
       <Reservation Description="Section for CSA" Name=".csa" Size="16" Alignment="64" Unit="KB">

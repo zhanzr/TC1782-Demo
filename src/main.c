@@ -204,52 +204,128 @@ void simple_delay(uint32_t t)
 	}
 }
 
-uint32_t g_tmp1;
-uint32_t g_tmp2;
-uint32_t g_tmp3;
-uint32_t g_tmp4;
-uint32_t g_tmp_ret;
-
-uint32_t* Ifx_Get_A10(void);
-
-void test_sp_1(void)
-{
-	g_tmp2 = (uint32_t)Ifx_Get_A10();
-
-	return;
-}
-
-uint32_t test_sp_2(void)
-{
-	volatile uint32_t tmp_var = 100;
-	tmp_var *= 2;
-
-	g_tmp3 = (uint32_t)Ifx_Get_A10();
-
-	return tmp_var;
-}
-
-
 void no_rtos_loop(void)
 {
 	while(1)
 	{
-		printf("No RTOS Loop. CPU:%u Hz Tricore %04X\n",
+		printf("No RTOS Loop. CPU:%u Hz Tricore %04X, NewLibVer:%s\n",
 				get_cpu_frequency(),
-				__TRICORE_NAME__
+				__TRICORE_NAME__,
+				_NEWLIB_VERSION
 		);
 
-		g_tmp1 = (uint32_t)Ifx_Get_A10();
-		test_sp_1();
-		g_tmp_ret = test_sp_2();
-		g_tmp4 = (uint32_t)Ifx_Get_A10();
+		printf("errno %d @ %08X %08x\n",
+				errno,
+				(uint32_t)&errno,
+				__errno );
 
-		printf("%08X, %08X, %08X, %08X, %08X\n",
-				g_tmp1,
-				g_tmp2,
-				g_tmp3,
-				g_tmp4,
-				g_tmp_ret);
+		extern void* sbrk (size_t incr);
+		printf("%08X %08X\n", (uint32_t)sbrk, sbrk(0));
+
+		printf("_REENT @ %08X\n", _REENT);
+		printf("errno:%d stdin:%08X stdout:%08X, stderr:%08X\n",
+				_REENT->_errno, _REENT->_stdin, _REENT->_stdout, _REENT->_stderr);
+
+		extern char __HEAP_BEGIN;
+		printf("__HEAP_BEGIN\t:%08X\n", (uint32_t)&__HEAP_BEGIN);
+		extern char __HEAP;
+		printf("__HEAP\t:%08X\n", (uint32_t)&__HEAP);
+		extern char __HEAP_SIZE;
+		printf("__HEAP_SIZE\t:%08X\n", (uint32_t)&__HEAP_SIZE);
+		extern char __HEAP_END;
+		printf("__HEAP_END\t:%08X\n", (uint32_t)&__HEAP_END);
+
+#define	BIG_BLOCK_SIZE	(((uint32_t)&__HEAP_SIZE)-0x10)
+
+		//try to malloc the biggest block
+		{
+			printf("\n");
+			printf("try to malloc the biggest block:%08X\n", BIG_BLOCK_SIZE);
+			uint8_t* p_big = malloc(BIG_BLOCK_SIZE);
+			printf("%08X\n", (uint32_t)p_big);
+
+			uint32_t tmp_size = BIG_BLOCK_SIZE;
+			while(NULL==p_big)
+			{
+				tmp_size -= 4;
+				p_big = malloc(tmp_size);
+			}
+			printf("biggest size:%08X @ %08X\n", tmp_size, (uint32_t)p_big);
+
+			if(NULL != p_big)
+			{
+				free(p_big);
+			}
+			printf("\n");
+		}
+
+		//malloc little block
+		printf("malloc little block\n");
+		uint8_t* pByte = malloc(1);
+		printf("%08X\n", (uint32_t)pByte);
+
+		uint16_t* pShort = malloc(2);
+		printf("%08X\n", (uint32_t)pShort);
+
+		uint32_t* pWord = malloc(4);
+		printf("%08X\n", (uint32_t)pWord);
+
+		//malloc negative block
+		printf("\n");
+		printf("malloc negative block\n");
+		uint8_t* pByte_neg = malloc(-1);
+		printf("%08X\n", (uint32_t)pByte_neg);
+
+		//malloc impossible big block
+		printf("\n");
+		printf("malloc impossible big block:%08X\n", BIG_BLOCK_SIZE);
+		uint32_t* pWord_big = malloc(BIG_BLOCK_SIZE);
+		printf("%08X\n", (uint32_t)pWord_big);
+
+		//Free the previous allocated blocks
+		printf("\n");
+		printf("free the allocated\n");
+		if(NULL != pByte)
+		{
+			free(pByte);
+		}
+
+		if(NULL != pShort)
+		{
+			free(pShort);
+		}
+
+		if(NULL != pWord)
+		{
+			free(pWord);
+		}
+
+		if(NULL != pByte_neg)
+		{
+			free(pByte_neg);
+		}
+
+		printf("\n");
+		//retry big block
+		{
+			printf("retry big block:%08X\n", BIG_BLOCK_SIZE);
+			pWord_big = malloc(BIG_BLOCK_SIZE);
+			printf("%08X\n", (uint32_t)pWord_big);
+
+			uint32_t tmp_size = BIG_BLOCK_SIZE;
+			while(NULL==pWord_big)
+			{
+				tmp_size -= 4;
+				pWord_big = malloc(tmp_size);
+			}
+			printf("biggest size:%08X @ %08X\n", tmp_size, (uint32_t)pWord_big);
+
+			if(NULL != pWord_big)
+			{
+				free(pWord_big);
+			}
+			printf("\n");
+		}
 
 		LEDTOGGLE(0);
 		LEDTOGGLE(1);
@@ -260,7 +336,7 @@ void no_rtos_loop(void)
 		//			LEDTOGGLE(6);
 		//			LEDTOGGLE(7);
 
-		simple_delay(1000);
+		simple_delay(10000);
 	}
 }
 
@@ -290,25 +366,7 @@ int main(void)
 	/* Setup the hardware for use with the TriCore evaluation board. */
 	prvSetupHardware();
 
-// Stack Experimentation
-	extern void __USTACK_BEGIN(void);
-	printf("__USTACK_BEGIN\t:%08X\n\n", (uint32_t)__USTACK_BEGIN);
-	extern void __USTACK(void);
-	printf("__USTACK\t:%08X\n\n", (uint32_t)__USTACK);
-	extern void __USTACK_SIZE(void);
-	printf("__USTACK_SIZE\t:%08X\n\n", (uint32_t)__USTACK_SIZE);
-	extern void __USTACK_END(void);
-	printf("__USTACK_END\t:%08X\n\n", (uint32_t)__USTACK_END);
-
-	extern void __ISTACK_BEGIN(void);
-	printf("__ISTACK_BEGIN\t:%08X\n\n", (uint32_t)__ISTACK_BEGIN);
-	extern void __ISTACK(void);
-	printf("__ISTACK\t:%08X\n\n", (uint32_t)__ISTACK);
-	extern void __ISTACK_SIZE(void);
-	printf("__ISTACK_SIZE\t:%08X\n\n", (uint32_t)__ISTACK_SIZE);
-	extern void __ISTACK_END(void);
-	printf("__ISTACK_END\t:%08X\n\n", (uint32_t)__ISTACK_END);
-
+	// Heap Experimentation
 	no_rtos_loop();
 
 	/* Start standard demo/test application flash tasks.  See the comments at
@@ -338,7 +396,7 @@ int main(void)
 	is too small for the idle and/or timer tasks to be created within
 	vTaskStartScheduler(). */
 
-//	no_rtos_loop();
+	//	no_rtos_loop();
 
 	return EXIT_SUCCESS;
 }
@@ -652,86 +710,86 @@ void print_task(void *pvParameters)
 				//				printf("STM_SRC1\t%08X\t:%08X\n\n", &STM_SRC1, STM_SRC1.reg);
 				//				printf("STM_SRC0\t%08X\t:%08X\n\n", &STM_SRC0, STM_SRC0.reg);
 
-//				printf("CPUID\t%08X\t:%08X\n\n", &CPU_ID, _mfcr(CPU_ID_ADDR));
-//				printf("CCTRL\t%08X\t:%08X\n\n", &CCTRL, _mfcr(CCTRL_ADDR));
-//				printf("CCNT\t%08X\t:%08X\n\n", &CCNT, _mfcr(CCNT_ADDR));
-//				printf("ICNT\t%08X\t:%08X\n\n", &ICNT, _mfcr(ICNT_ADDR));
-//				printf("M1CNT\t%08X\t:%08X\n\n", &M1CNT, _mfcr(M1CNT_ADDR));
-//				printf("M2CNT\t%08X\t:%08X\n\n", &M2CNT, _mfcr(M2CNT_ADDR));
-//				printf("M3CNT\t%08X\t:%08X\n\n", &M3CNT, _mfcr(M3CNT_ADDR));
-//
-//				extern void _start(void);
-//				printf("_start\t:%08X\n\n", (uint32_t)_start);
-//				extern void __EBMCFG(void);
-//				printf("__EBMCFG\t:%08X\n\n", (uint32_t)__EBMCFG);
-//
-//				extern void __USTACK_BEGIN(void);
-//				printf("__USTACK_BEGIN\t:%08X\n\n", (uint32_t)__USTACK_BEGIN);
-//				extern void __USTACK(void);
-//				printf("__USTACK\t:%08X\n\n", (uint32_t)__USTACK);
-//				extern void __USTACK_SIZE(void);
-//				printf("__USTACK_SIZE\t:%08X\n\n", (uint32_t)__USTACK_SIZE);
-//				extern void __USTACK_END(void);
-//				printf("__USTACK_END\t:%08X\n\n", (uint32_t)__USTACK_END);
-//
-//				extern void __ISTACK_BEGIN(void);
-//				printf("__ISTACK_BEGIN\t:%08X\n\n", (uint32_t)__ISTACK_BEGIN);
-//				extern void __ISTACK(void);
-//				printf("__ISTACK\t:%08X\n\n", (uint32_t)__ISTACK);
-//				extern void __ISTACK_SIZE(void);
-//				printf("__ISTACK_SIZE\t:%08X\n\n", (uint32_t)__ISTACK_SIZE);
-//				extern void __ISTACK_END(void);
-//				printf("__ISTACK_END\t:%08X\n\n", (uint32_t)__ISTACK_END);
-//
-//				extern void __HEAP_BEGIN(void);
-//				printf("__HEAP_BEGIN\t:%08X\n\n", (uint32_t)__HEAP_BEGIN);
-//				extern void __HEAP(void);
-//				printf("__HEAP\t:%08X\n\n", (uint32_t)__HEAP);
-//				extern void __HEAP_SIZE(void);
-//				printf("__HEAP_SIZE\t:%08X\n\n", (uint32_t)__HEAP_SIZE);
-//				extern void __HEAP_END(void);
-//				printf("__HEAP_END\t:%08X\n\n", (uint32_t)__HEAP_END);
-//
-//				extern void __CSA_BEGIN(void);
-//				printf("__CSA_BEGIN\t:%08X\n\n", (uint32_t)__CSA_BEGIN);
-//				extern void __CSA(void);
-//				printf("__CSA\t:%08X\n\n", (uint32_t)__CSA);
-//				extern void __CSA_SIZE(void);
-//				printf("__CSA_SIZE\t:%08X\n\n", (uint32_t)__CSA_SIZE);
-//				extern void __CSA_END(void);
-//				printf("__CSA_END\t:%08X\n\n", (uint32_t)__CSA_END);
-//
-//				extern void _SMALL_DATA_(void);
-//				printf("_SMALL_DATA_\t:%08X\n\n", (uint32_t)_SMALL_DATA_);
-//				extern void _SMALL_DATA2_(void);
-//				printf("_SMALL_DATA2_\t:%08X\n\n", (uint32_t)_SMALL_DATA2_);
-//
-//				extern void boardSetupTab(void);
-//				printf("boardSetupTab\t:%08X\n\n", (uint32_t)boardSetupTab);
-//				extern void boardSetupTabSize(void);
-//				printf("boardSetupTabSize\t:%08X\n\n", (uint32_t)boardSetupTabSize);
-//				extern void __board_init(void);
-//				printf("__board_init\t:%08X\n\n", (uint32_t)__board_init);
-//				extern void first_trap_table(void);
-//				printf("first_trap_table\t:%08X\n\n", (uint32_t)first_trap_table);
+				//				printf("CPUID\t%08X\t:%08X\n\n", &CPU_ID, _mfcr(CPU_ID_ADDR));
+				//				printf("CCTRL\t%08X\t:%08X\n\n", &CCTRL, _mfcr(CCTRL_ADDR));
+				//				printf("CCNT\t%08X\t:%08X\n\n", &CCNT, _mfcr(CCNT_ADDR));
+				//				printf("ICNT\t%08X\t:%08X\n\n", &ICNT, _mfcr(ICNT_ADDR));
+				//				printf("M1CNT\t%08X\t:%08X\n\n", &M1CNT, _mfcr(M1CNT_ADDR));
+				//				printf("M2CNT\t%08X\t:%08X\n\n", &M2CNT, _mfcr(M2CNT_ADDR));
+				//				printf("M3CNT\t%08X\t:%08X\n\n", &M3CNT, _mfcr(M3CNT_ADDR));
+				//
+				//				extern void _start(void);
+				//				printf("_start\t:%08X\n\n", (uint32_t)_start);
+				//				extern void __EBMCFG(void);
+				//				printf("__EBMCFG\t:%08X\n\n", (uint32_t)__EBMCFG);
+				//
+				//				extern void __USTACK_BEGIN(void);
+				//				printf("__USTACK_BEGIN\t:%08X\n\n", (uint32_t)__USTACK_BEGIN);
+				//				extern void __USTACK(void);
+				//				printf("__USTACK\t:%08X\n\n", (uint32_t)__USTACK);
+				//				extern void __USTACK_SIZE(void);
+				//				printf("__USTACK_SIZE\t:%08X\n\n", (uint32_t)__USTACK_SIZE);
+				//				extern void __USTACK_END(void);
+				//				printf("__USTACK_END\t:%08X\n\n", (uint32_t)__USTACK_END);
+				//
+				//				extern void __ISTACK_BEGIN(void);
+				//				printf("__ISTACK_BEGIN\t:%08X\n\n", (uint32_t)__ISTACK_BEGIN);
+				//				extern void __ISTACK(void);
+				//				printf("__ISTACK\t:%08X\n\n", (uint32_t)__ISTACK);
+				//				extern void __ISTACK_SIZE(void);
+				//				printf("__ISTACK_SIZE\t:%08X\n\n", (uint32_t)__ISTACK_SIZE);
+				//				extern void __ISTACK_END(void);
+				//				printf("__ISTACK_END\t:%08X\n\n", (uint32_t)__ISTACK_END);
+				//
+				//				extern void __HEAP_BEGIN(void);
+				//				printf("__HEAP_BEGIN\t:%08X\n\n", (uint32_t)__HEAP_BEGIN);
+				//				extern void __HEAP(void);
+				//				printf("__HEAP\t:%08X\n\n", (uint32_t)__HEAP);
+				//				extern void __HEAP_SIZE(void);
+				//				printf("__HEAP_SIZE\t:%08X\n\n", (uint32_t)__HEAP_SIZE);
+				//				extern void __HEAP_END(void);
+				//				printf("__HEAP_END\t:%08X\n\n", (uint32_t)__HEAP_END);
+				//
+				//				extern void __CSA_BEGIN(void);
+				//				printf("__CSA_BEGIN\t:%08X\n\n", (uint32_t)__CSA_BEGIN);
+				//				extern void __CSA(void);
+				//				printf("__CSA\t:%08X\n\n", (uint32_t)__CSA);
+				//				extern void __CSA_SIZE(void);
+				//				printf("__CSA_SIZE\t:%08X\n\n", (uint32_t)__CSA_SIZE);
+				//				extern void __CSA_END(void);
+				//				printf("__CSA_END\t:%08X\n\n", (uint32_t)__CSA_END);
+				//
+				//				extern void _SMALL_DATA_(void);
+				//				printf("_SMALL_DATA_\t:%08X\n\n", (uint32_t)_SMALL_DATA_);
+				//				extern void _SMALL_DATA2_(void);
+				//				printf("_SMALL_DATA2_\t:%08X\n\n", (uint32_t)_SMALL_DATA2_);
+				//
+				//				extern void boardSetupTab(void);
+				//				printf("boardSetupTab\t:%08X\n\n", (uint32_t)boardSetupTab);
+				//				extern void boardSetupTabSize(void);
+				//				printf("boardSetupTabSize\t:%08X\n\n", (uint32_t)boardSetupTabSize);
+				//				extern void __board_init(void);
+				//				printf("__board_init\t:%08X\n\n", (uint32_t)__board_init);
+				//				extern void first_trap_table(void);
+				//				printf("first_trap_table\t:%08X\n\n", (uint32_t)first_trap_table);
 
-//				printf("BIV\t%08X\t:%08X\n\n", &BIV, _mfcr(BIV_ADDR));
-//				extern void TriCore_int_table(void);
-//				printf("TriCore_int_table\t:%08X\n\n", (uint32_t)TriCore_int_table);
-//
-//				extern void __interrupt_1(void);
-//				printf("__interrupt_1\t:%08X\n\n", (uint32_t)__interrupt_1);
-//				extern void ___interrupt_1(void);
-//				printf("___interrupt_1\t:%08X\n\n", (uint32_t)___interrupt_1);
-//				extern void __interrupt_2(void);
-//				printf("__interrupt_2\t:%08X\n\n", (uint32_t)__interrupt_2);
-//
-//				extern Hnd_arg Cdisptab[MAX_INTRS];
-//				printf("Soft Interrupt vector table %08X:%u * %u = %u\n",
-//						(uint32_t)Cdisptab,
-//						sizeof(Cdisptab[0]),
-//						MAX_INTRS,
-//						sizeof(Cdisptab));
+				//				printf("BIV\t%08X\t:%08X\n\n", &BIV, _mfcr(BIV_ADDR));
+				//				extern void TriCore_int_table(void);
+				//				printf("TriCore_int_table\t:%08X\n\n", (uint32_t)TriCore_int_table);
+				//
+				//				extern void __interrupt_1(void);
+				//				printf("__interrupt_1\t:%08X\n\n", (uint32_t)__interrupt_1);
+				//				extern void ___interrupt_1(void);
+				//				printf("___interrupt_1\t:%08X\n\n", (uint32_t)___interrupt_1);
+				//				extern void __interrupt_2(void);
+				//				printf("__interrupt_2\t:%08X\n\n", (uint32_t)__interrupt_2);
+				//
+				//				extern Hnd_arg Cdisptab[MAX_INTRS];
+				//				printf("Soft Interrupt vector table %08X:%u * %u = %u\n",
+				//						(uint32_t)Cdisptab,
+				//						sizeof(Cdisptab[0]),
+				//						MAX_INTRS,
+				//						sizeof(Cdisptab));
 
 				printf("BTV\t%08X\t:%08X\n\n", &BTV, _mfcr(BTV_ADDR));
 				extern void TriCore_trap_table(void);

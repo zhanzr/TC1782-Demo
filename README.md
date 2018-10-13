@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 22.
+FreeRTOS Example 23.
 
 Content:
 
-	Demo for U Stack and I Stack.
+	Demo for CLib(New Lib 1.18) Heap and allocation.
 
