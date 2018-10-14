@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 23.
+FreeRTOS Example 24.
 
 Content:
 
-	Demo for CLib(New Lib 1.18) Heap and allocation.
+	Demo for Context Save Area. 
 

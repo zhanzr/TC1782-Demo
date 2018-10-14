@@ -107,6 +107,7 @@
 									<listOptionValue builtIn="false" value="&quot;../h&quot;"/>
 								</option>
 								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.assembler.debug.option.677098304" name="Debug Mode" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.assembler.debug.option" value="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.assembler.debug.option.none" valueType="enumerated"/>
+								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.assembler.debug.option.ahlms.513842775" name="Create assembler listing (-Wa,-ahlms=${OutputFileBaseName}.lst)" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.assembler.debug.option.ahlms" value="false" valueType="boolean"/>
 								<inputType id="com.rt.hightec.buildsystem.tricore.new.assembler.inputtype.1555688501" name="Assembler Input NO GUI" superClass="com.rt.hightec.buildsystem.tricore.new.assembler.inputtype"/>
 							</tool>
 							<tool id="com.rt.hightec.buildsystem.tricore.new.assembler.gtm.409412908" name="TriCore GTM Assembler" superClass="com.rt.hightec.buildsystem.tricore.new.assembler.gtm">
@@ -122,10 +123,7 @@
 								<inputType id="com.rt.hightec.buildsystem.tricore.new.compiler.c.input.cpcp.122835915" name="Compiler Input (CPCP)" superClass="com.rt.hightec.buildsystem.tricore.new.compiler.c.input.cpcp"/>
 							</tool>
 							<tool id="com.rt.hightec.buildsystem.tricore.new.compiler.c.1300966571" name="TriCore C Compiler" superClass="com.rt.hightec.buildsystem.tricore.new.compiler.c">
-								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.symbols.defined.1525542366" name="Defined symbols (-D)" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.symbols.defined" valueType="definedSymbols">
-									<listOptionValue builtIn="false" value="TRIBOARD_TC1782"/>
-									<listOptionValue builtIn="false" value="USE_IRQ"/>
-								</option>
+								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.symbols.defined.1525542366" name="Defined symbols (-D)" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.symbols.defined" valueType="definedSymbols"/>
 								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.general.paths.954625300" name="Include Paths" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.general.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;../h&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/Common_Demo_Source/include}&quot;"/>
@@ -134,11 +132,13 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src/ThirdPartyCode}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/src}&quot;"/>
 								</option>
-								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.optimization.optimization.1029194658" name="Optimization Level" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.optimization.optimization" value="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.code.optimization.size" valueType="enumerated"/>
+								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.optimization.optimization.1029194658" name="Optimization Level" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.optimization.optimization" value="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.code.optimization.none" valueType="enumerated"/>
 								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.debug.info.1179546838" name="Debug Level" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.debug.info" value="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.debug.info.0" valueType="enumerated"/>
 								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.c.language.standard.1616965856" name="C Standard (-std)" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.c.language.standard" value="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.c.language.standard.gnu99" valueType="enumerated"/>
 								<option id="com.rt.hightec.buildsystem.tricore.new.compiler.architecture.EABIConform.c.1197945592" name="EABI conform (-meabi)" superClass="com.rt.hightec.buildsystem.tricore.new.compiler.architecture.EABIConform.c" value="true" valueType="boolean"/>
 								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.CodeGeneration.FShortDouble.1680294892" name="Treat double as float (-fshort-double)" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.CodeGeneration.FShortDouble" value="false" valueType="boolean"/>
+								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.output.pipe.512774496" name="Do not generate temporary assembler files (-pipe)" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.output.pipe" value="true" valueType="boolean"/>
+								<option id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.output.adhlms.lst.906539364" name="Create assembler listing (-Wa,-ahlms=${OutputFileBaseName}.lst)" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.output.adhlms.lst" value="false" valueType="boolean"/>
 								<inputType id="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.c.inputType.682082627" name="Compiler Input (C)" superClass="com.rt.hightec.framework.buildsystem.abstract.hightec.tool.compiler.c.inputType"/>
 							</tool>
 							<tool id="com.rt.hightec.buildsystem.tricore.new.compiler.cpp.1184109490" name="TriCore C++ Compiler" superClass="com.rt.hightec.buildsystem.tricore.new.compiler.cpp">

@@ -83,19 +83,27 @@
 #include "list.h"
 
 #if configCHECK_FOR_STACK_OVERFLOW > 0
-#error "Stack checking cannot be used with this port, as, unlike most ports, the pxTopOfStack member of the TCB is consumed CSA.  CSA starvation, loosely equivalent to stack overflow, will result in a trap exception."
-/* The stack pointer is accessible using portCSA_TO_ADDRESS( portCSA_TO_ADDRESS( pxCurrentTCB->pxTopOfStack )[ 0 ] )[ 2 ]; */
+#error "Stack checking cannot be used with this port"
+// as, unlike most ports, the pxTopOfStack member of the TCB is consumed CSA.
+//CSA starvation, loosely equivalent to stack overflow, will result in a trap exception."
+// The stack pointer is accessible using
+//portCSA_TO_ADDRESS( portCSA_TO_ADDRESS( pxCurrentTCB->pxTopOfStack )[ 0 ] )[ 2 ]; */
 #endif /* configCHECK_FOR_STACK_OVERFLOW */
 
 
 /*-----------------------------------------------------------*/
 
 /* System register Definitions. */
-#define portSYSTEM_PROGRAM_STATUS_WORD					( 0x000008FFUL ) /* Supervisor Mode, MPU Register Set 0 and Call Depth Counting disabled. */
-#define portINITIAL_PRIVILEGED_PROGRAM_STATUS_WORD		( 0x000014FFUL ) /* IO Level 1, MPU Register Set 1 and Call Depth Counting disabled. */
-#define portINITIAL_UNPRIVILEGED_PROGRAM_STATUS_WORD	( 0x000010FFUL ) /* IO Level 0, MPU Register Set 1 and Call Depth Counting disabled. */
-#define portINITIAL_PCXI_UPPER_CONTEXT_WORD				( 0x00C00000UL ) /* The lower 20 bits identify the CSA address. */
-#define portINITIAL_SYSCON								( 0x00000000UL ) /* MPU Disable. */
+/* Supervisor Mode, MPU Register Set 0 and Call Depth Counting disabled. */
+#define portSYSTEM_PROGRAM_STATUS_WORD					( 0x000008FFUL )
+/* IO Level 1, MPU Register Set 1 and Call Depth Counting disabled. */
+#define portINITIAL_PRIVILEGED_PROGRAM_STATUS_WORD		( 0x000014FFUL )
+/* IO Level 0, MPU Register Set 1 and Call Depth Counting disabled. */
+#define portINITIAL_UNPRIVILEGED_PROGRAM_STATUS_WORD	( 0x000010FFUL )
+/* The lower 20 bits identify the CSA address. */
+#define portINITIAL_PCXI_UPPER_CONTEXT_WORD				( 0x00C00000UL )
+/* MPU Disable. */
+#define portINITIAL_SYSCON								( 0x00000000UL )
 
 /* CSA manipulation macros. */
 #define portCSA_FCX_MASK					( 0x000FFFFFUL )
@@ -106,9 +114,6 @@
 
 /* Each CSA contains 16 words of data. */
 #define portNUM_WORDS_IN_CSA				( 16 )
-
-/* The interrupt enable bit in the PCP_SRC register. */
-#define portENABLE_CPU_INTERRUPT 			( 1U << 12U )
 /*-----------------------------------------------------------*/
 
 /*
@@ -132,7 +137,7 @@ static void prvInterruptYield( int iTrapIdentification );
 /* This reference is required by the save/restore context macros. */
 extern volatile uint32_t *pxCurrentTCB;
 
-/* Precalculate the compare match value at compile time. */
+/* The compare match value of STM channel 0. */
 #define CMP0_MATCH_VAL	( configPERIPHERAL_CLOCK_HZ / configTICK_RATE_HZ )
 
 /*-----------------------------------------------------------*/
@@ -167,7 +172,7 @@ StackType_t *pxPortInitialiseStack( StackType_t * pxTopOfStack, TaskFunction_t p
 		_dsync();
 
 		/* Consume two free CSAs. */
-		pulLowerCSA = portCSA_TO_ADDRESS( __MFCR( $FCX ) );
+		pulLowerCSA = portCSA_TO_ADDRESS( _mfcr( FCX_ADDR ) );
 		if( NULL != pulLowerCSA )
 		{
 			/* The Lower Links to the Upper. */
@@ -180,7 +185,7 @@ StackType_t *pxPortInitialiseStack( StackType_t * pxTopOfStack, TaskFunction_t p
 			/* Remove the two consumed CSAs from the free CSA list. */
 			_disable();
 			_dsync();
-			__MTCR( $FCX, pulUpperCSA[ 0 ] );
+			_mtcr( FCX_ADDR, pulUpperCSA[ 0 ] );
 			_isync();
 			_enable();
 		}
@@ -244,7 +249,8 @@ int32_t xPortStartScheduler( void )
 
 	/* Enable then install the priority 1 interrupt for pending context
 	switches from an ISR.  See mod_SRC in the TriCore manual. */
-	CPU_SRC0.reg = 	( portENABLE_CPU_INTERRUPT ) | ( configKERNEL_YIELD_PRIORITY );
+	CPU_SRC0.bits.SRPN = configKERNEL_YIELD_PRIORITY;
+	CPU_SRC0.bits.SRE = 1;
 	if( 0 == _install_int_handler( configKERNEL_YIELD_PRIORITY, prvInterruptYield, 0 ) )
 	{
 		/* Failed to install the yield handler, force an assert. */
@@ -291,7 +297,7 @@ static void prvSetupTimerInterrupt( void )
 	{
 		/* Wait until access to Endint protected register is enabled. */
 		while( 0 != ( WDT_CON0.bits.ENDINIT & 0x1UL ) )
-		{;}
+		{_nop();}
 		/* RMC == 1 so STM Clock == FPI */
 		STM_CLC.bits.RMC = 1UL;
 	}
@@ -457,14 +463,14 @@ void vPortReclaimCSA( uint32_t *pxTCB )
 	{
 		/* Look up the current free CSA head. */
 		_dsync();
-		pxFreeCSA = __MFCR( $FCX );
+		pxFreeCSA = _mfcr( FCX_ADDR );
 
 		/* Join the current Free onto the Tail of what is being reclaimed. */
 		portCSA_TO_ADDRESS( pxTailCSA )[ 0 ] = pxFreeCSA;
 
 		/* Move the head of the reclaimed into the Free. */
 		_dsync();
-		__MTCR( $FCX, pxHeadCSA );
+		__mtcr( FCX_ADDR, pxHeadCSA );
 		_isync();
 	}
 	_enable();

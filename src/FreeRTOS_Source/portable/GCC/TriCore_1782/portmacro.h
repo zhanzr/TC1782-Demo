@@ -118,7 +118,7 @@ typedef uint32_t TickType_t;
 #define portSTACK_GROWTH							( -1 )
 #define portTICK_PERIOD_MS							( ( TickType_t ) 1000 / configTICK_RATE_HZ )
 #define portBYTE_ALIGNMENT							4
-#define portNOP()									__asm volatile( " nop " )
+#define portNOP()									_nop()
 #define portCRITICAL_NESTING_IN_TCB					1
 #define portRESTORE_FIRST_TASK_PRIORITY_LEVEL		1
 
@@ -140,8 +140,10 @@ extern void vTaskExitCritical(void);
 /*---------------------------------------------------------------------------*/
 
 /* CSA Manipulation. */
-#define portCSA_TO_ADDRESS( pCSA )			( ( uint32_t * )( ( ( ( pCSA ) & 0x000F0000 ) << 12 ) | ( ( ( pCSA ) & 0x0000FFFF ) << 6 ) ) )
-#define portADDRESS_TO_CSA( pAddress )		( ( uint32_t )( ( ( ( (uint32_t)( pAddress ) ) & 0xF0000000 ) >> 12 ) | ( ( ( uint32_t )( pAddress ) & 0x003FFFC0 ) >> 6 ) ) )
+#define portCSA_TO_ADDRESS( pCSA )	\
+( ( uint32_t * )( ( ( ( pCSA ) & 0x000F0000 ) << 12 ) | ( ( ( pCSA ) & 0x0000FFFF ) << 6 ) ) )
+#define portADDRESS_TO_CSA( pAddress )	\
+( ( uint32_t )( ( ( ( (uint32_t)( pAddress ) ) & 0xF0000000 ) >> 12 ) | ( ( ( uint32_t )( pAddress ) & 0x003FFFC0 ) >> 6 ) ) )
 /*---------------------------------------------------------------------------*/
 
 #define portYIELD()								_syscall( 0 )
@@ -153,46 +155,54 @@ extern void vTaskExitCritical(void);
 /* Critical section management. */
 
 /* Set ICR.CCPN to configMAX_SYSCALL_INTERRUPT_PRIORITY. */
-#define portDISABLE_INTERRUPTS()	{																									\
-										uint32_t ulICR;																			\
-										_disable();																						\
-										ulICR = _mfcr( ICR_ADDR ); 		/* Get current ICR value. */										\
-										ulICR &= ~portCCPN_MASK;	/* Clear down mask bits. */											\
-										ulICR |= configMAX_SYSCALL_INTERRUPT_PRIORITY; /* Set mask bits to required priority mask. */	\
-										_mtcr( ICR_ADDR, ulICR );		/* Write back updated ICR. */										\
-										_isync();																						\
-										_enable();																						\
-									}
+#define portDISABLE_INTERRUPTS()	\
+{																									\
+	uint32_t ulICR;																			\
+	_disable();																						\
+	ulICR = _mfcr( ICR_ADDR ); 		/* Get current ICR value. */										\
+	ulICR &= ~portCCPN_MASK;	/* Clear down mask bits. */											\
+	ulICR |= configMAX_SYSCALL_INTERRUPT_PRIORITY; /* Set mask bits to required priority mask. */	\
+	_mtcr( ICR_ADDR, ulICR );		/* Write back updated ICR. */										\
+	_isync();																						\
+	_enable();																						\
+}
 
 /* Clear ICR.CCPN to allow all interrupt priorities. */
-#define portENABLE_INTERRUPTS()		{																	\
-										uint32_t ulICR;											\
-										_disable();														\
-										ulICR = _mfcr( ICR_ADDR );		/* Get current ICR value. */		\
-										ulICR &= ~portCCPN_MASK;	/* Clear down mask bits. */			\
-										_mtcr( ICR_ADDR, ulICR );		/* Write back updated ICR. */		\
-										_isync();														\
-										_enable();														\
-									}
+#define portENABLE_INTERRUPTS()		\
+{																	\
+	uint32_t ulICR;											\
+	_disable();														\
+	ulICR = _mfcr( ICR_ADDR );		/* Get current ICR value. */		\
+	ulICR &= ~portCCPN_MASK;	/* Clear down mask bits. */			\
+	_mtcr( ICR_ADDR, ulICR );		/* Write back updated ICR. */		\
+	_isync();														\
+	_enable();														\
+}
 
 /* Set ICR.CCPN to uxSavedMaskValue. */
-#define portCLEAR_INTERRUPT_MASK_FROM_ISR( uxSavedMaskValue ) 	{																						\
-																	uint32_t ulICR;																\
-																	_disable();																			\
-																	ulICR = _mfcr( ICR_ADDR );		/* Get current ICR value. */							\
-																	ulICR &= ~portCCPN_MASK;	/* Clear down mask bits. */								\
-																	ulICR |= uxSavedMaskValue;	/* Set mask bits to previously saved mask value. */		\
-																	_mtcr( ICR_ADDR, ulICR );		/* Write back updated ICR. */							\
-																	_isync();																			\
-																	_enable();																			\
-																}
+#define portCLEAR_INTERRUPT_MASK_FROM_ISR( uxSavedMaskValue ) 	\
+{																						\
+	uint32_t ulICR;																\
+	_disable();																			\
+	ulICR = _mfcr( ICR_ADDR );		/* Get current ICR value. */							\
+	ulICR &= ~portCCPN_MASK;	/* Clear down mask bits. */								\
+	ulICR |= uxSavedMaskValue;	/* Set mask bits to previously saved mask value. */		\
+	_mtcr( ICR_ADDR, ulICR );		/* Write back updated ICR. */							\
+	_isync();																			\
+	_enable();																			\
+}
 
 /* Set ICR.CCPN to configMAX_SYSCALL_INTERRUPT_PRIORITY */
 extern uint32_t uxPortSetInterruptMaskFromISR(void);
 #define portSET_INTERRUPT_MASK_FROM_ISR() 	uxPortSetInterruptMaskFromISR()
 
 /* Pend a priority 1 interrupt, which will take care of the context switch. */
-#define portYIELD_FROM_ISR( xHigherPriorityTaskWoken ) 		if( xHigherPriorityTaskWoken != pdFALSE ) {	CPU_SRC0.bits.SETR = 1; _isync(); }
+#define portYIELD_FROM_ISR( xHigherPriorityTaskWoken ) 		\
+		if( xHigherPriorityTaskWoken != pdFALSE ) \
+		{\
+			CPU_SRC0.bits.SETR = 1;\
+			_isync();\
+		}
 
 /*---------------------------------------------------------------------------*/
 

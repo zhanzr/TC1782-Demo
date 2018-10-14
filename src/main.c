@@ -190,7 +190,9 @@ void enable_performance_cnt(void)
 
 		tmpCCTRL.bits.CE = 1;
 
+		_dsync();
 		_mtcr(CCTRL_ADDR, tmpCCTRL.reg);
+		_isync();
 	}
 	lock_wdtcon();
 }
@@ -204,6 +206,83 @@ void simple_delay(uint32_t t)
 	}
 }
 
+extern void __CSA_BEGIN(void);
+extern void __CSA(void);
+extern void __CSA_SIZE(void);
+extern void __CSA_END(void);
+
+#define	CSA_ITEM_SIZE	64
+
+void test_call_1(uint32_t in);
+void test_call_2(void);
+void test_call_3(void);
+
+void print_csa_reg(void)
+{
+	volatile uint32_t tmp_u32;
+//	tmp_u32 = _mfcr(CPU_ID_ADDR);
+//	printf("CPUID\t%08X\t:%08X\n\n", &CPU_ID, tmp_u32);
+
+	tmp_u32 = _mfcr(PSW_ADDR);
+	printf("PSW_ADDR\t%08X\t:%08X\n", PSW_ADDR, tmp_u32);
+
+	tmp_u32 = _mfcr(FCX_ADDR);
+	printf("FCX\t%08X\t:%08X %08X\n", FCX_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
+	tmp_u32 = _mfcr(LCX_ADDR);
+	printf("LCX\t%08X\t:%08X %08X\n", LCX_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
+	tmp_u32 = _mfcr(PCXI_ADDR);
+	printf("PCXI\t%08X\t:%08X %08X\n", PCXI_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
+
+	tmp_u32 = (uint32_t)__CSA_SIZE >> 6;
+	printf("Total CSA Number:%u\n", tmp_u32);
+
+//	printf("First CSA\n");
+//	for(uint32_t t_begin = (uint32_t)__CSA_BEGIN;
+//			t_begin<(uint32_t)__CSA_BEGIN+CSA_ITEM_SIZE;
+//			t_begin=t_begin+4)
+//	{
+//		printf("%08X ", *(uint32_t*)(t_begin+4));
+//	}
+//	printf("\n");
+//	printf("Second CSA\n");
+//	for(uint32_t t_begin = (uint32_t)__CSA_BEGIN+CSA_ITEM_SIZE;
+//			t_begin<(uint32_t)__CSA_BEGIN+2*CSA_ITEM_SIZE;
+//			t_begin=t_begin+4)
+//	{
+//		printf("%08X ", *(uint32_t*)(t_begin+4));
+//	}
+//	printf("\n");
+}
+
+void test_call_1(uint32_t in)
+{
+	if(1==in)
+	{
+		printf("%s %u\n", __func__, in);
+		print_csa_reg();
+	}
+	else
+	{
+		printf("%s %u\n", __func__, in);
+		print_csa_reg();
+
+		test_call_1(in-1);
+	}
+}
+
+void test_call_2(void)
+{
+	printf("%s\n", __func__);
+	print_csa_reg();
+}
+
+void test_call_3(void)
+{
+	printf("%s\n", __func__);
+	print_csa_reg();
+	test_call_2();
+}
+
 void no_rtos_loop(void)
 {
 	while(1)
@@ -214,118 +293,9 @@ void no_rtos_loop(void)
 				_NEWLIB_VERSION
 		);
 
-		printf("errno %d @ %08X %08x\n",
-				errno,
-				(uint32_t)&errno,
-				__errno );
-
-		extern void* sbrk (size_t incr);
-		printf("%08X %08X\n", (uint32_t)sbrk, sbrk(0));
-
-		printf("_REENT @ %08X\n", _REENT);
-		printf("errno:%d stdin:%08X stdout:%08X, stderr:%08X\n",
-				_REENT->_errno, _REENT->_stdin, _REENT->_stdout, _REENT->_stderr);
-
-		extern char __HEAP_BEGIN;
-		printf("__HEAP_BEGIN\t:%08X\n", (uint32_t)&__HEAP_BEGIN);
-		extern char __HEAP;
-		printf("__HEAP\t:%08X\n", (uint32_t)&__HEAP);
-		extern char __HEAP_SIZE;
-		printf("__HEAP_SIZE\t:%08X\n", (uint32_t)&__HEAP_SIZE);
-		extern char __HEAP_END;
-		printf("__HEAP_END\t:%08X\n", (uint32_t)&__HEAP_END);
-
-#define	BIG_BLOCK_SIZE	(((uint32_t)&__HEAP_SIZE)-0x10)
-
-		//try to malloc the biggest block
-		{
-			printf("\n");
-			printf("try to malloc the biggest block:%08X\n", BIG_BLOCK_SIZE);
-			uint8_t* p_big = malloc(BIG_BLOCK_SIZE);
-			printf("%08X\n", (uint32_t)p_big);
-
-			uint32_t tmp_size = BIG_BLOCK_SIZE;
-			while(NULL==p_big)
-			{
-				tmp_size -= 4;
-				p_big = malloc(tmp_size);
-			}
-			printf("biggest size:%08X @ %08X\n", tmp_size, (uint32_t)p_big);
-
-			if(NULL != p_big)
-			{
-				free(p_big);
-			}
-			printf("\n");
-		}
-
-		//malloc little block
-		printf("malloc little block\n");
-		uint8_t* pByte = malloc(1);
-		printf("%08X\n", (uint32_t)pByte);
-
-		uint16_t* pShort = malloc(2);
-		printf("%08X\n", (uint32_t)pShort);
-
-		uint32_t* pWord = malloc(4);
-		printf("%08X\n", (uint32_t)pWord);
-
-		//malloc negative block
-		printf("\n");
-		printf("malloc negative block\n");
-		uint8_t* pByte_neg = malloc(-1);
-		printf("%08X\n", (uint32_t)pByte_neg);
-
-		//malloc impossible big block
-		printf("\n");
-		printf("malloc impossible big block:%08X\n", BIG_BLOCK_SIZE);
-		uint32_t* pWord_big = malloc(BIG_BLOCK_SIZE);
-		printf("%08X\n", (uint32_t)pWord_big);
-
-		//Free the previous allocated blocks
-		printf("\n");
-		printf("free the allocated\n");
-		if(NULL != pByte)
-		{
-			free(pByte);
-		}
-
-		if(NULL != pShort)
-		{
-			free(pShort);
-		}
-
-		if(NULL != pWord)
-		{
-			free(pWord);
-		}
-
-		if(NULL != pByte_neg)
-		{
-			free(pByte_neg);
-		}
-
-		printf("\n");
-		//retry big block
-		{
-			printf("retry big block:%08X\n", BIG_BLOCK_SIZE);
-			pWord_big = malloc(BIG_BLOCK_SIZE);
-			printf("%08X\n", (uint32_t)pWord_big);
-
-			uint32_t tmp_size = BIG_BLOCK_SIZE;
-			while(NULL==pWord_big)
-			{
-				tmp_size -= 4;
-				pWord_big = malloc(tmp_size);
-			}
-			printf("biggest size:%08X @ %08X\n", tmp_size, (uint32_t)pWord_big);
-
-			if(NULL != pWord_big)
-			{
-				free(pWord_big);
-			}
-			printf("\n");
-		}
+		test_call_1(5);
+		test_call_2();
+		test_call_3();
 
 		LEDTOGGLE(0);
 		LEDTOGGLE(1);
@@ -366,7 +336,54 @@ int main(void)
 	/* Setup the hardware for use with the TriCore evaluation board. */
 	prvSetupHardware();
 
-	// Heap Experimentation
+	unlock_wdtcon();
+	//Call Depth Counting
+	PSW_t tmpPSW;
+	tmpPSW.reg = _mfcr(PSW_ADDR);
+	tmpPSW.bits.CDE = 1;
+	tmpPSW.bits.CDC = 0x00;
+	_dsync();
+	_mtcr(PSW_ADDR, tmpPSW.reg);
+	_isync();
+
+	lock_wdtcon();
+
+	// CSA Experimentation
+	printf("errno %d @ %08X %P\n",
+			errno,
+			(uint32_t)&errno,
+			__errno );
+
+	printf("__CSA_BEGIN\t:%08X\n", (uint32_t)__CSA_BEGIN);
+	printf("__CSA\t:%08X\n", (uint32_t)__CSA);
+	printf("__CSA_SIZE\t:%08X\n", (uint32_t)__CSA_SIZE);
+	printf("__CSA_END\t:%08X\n", (uint32_t)__CSA_END);
+
+	volatile uint32_t tmp_u32;
+	tmp_u32 = _mfcr(CPU_ID_ADDR);
+	printf("CPUID\t%08X\t:%08X\n", &CPU_ID, tmp_u32);
+	tmp_u32 = _mfcr(PSW_ADDR);
+	printf("PSW_ADDR\t%08X\t:%08X\n", PSW_ADDR, tmp_u32);
+
+	tmp_u32 = _mfcr(FCX_ADDR);
+	printf("FCX\t%08X\t:%08X %08X\n", FCX_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
+	tmp_u32 = _mfcr(LCX_ADDR);
+	printf("LCX\t%08X\t:%08X %08X\n", LCX_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
+	tmp_u32 = _mfcr(PCXI_ADDR);
+	printf("PCXI\t%08X\t:%08X %08X\n", PCXI_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
+
+	int32_t ai_32 = 1000;
+	int32_t bi_32 = 20;
+	int32_t ci_32 = ai_32/bi_32;
+	printf("%i / %i  = %i\n",
+			ai_32, bi_32, ci_32);
+
+	ai_32 = 300000;
+	bi_32 = 33;
+	ci_32 = ai_32/bi_32;
+	printf("%i / %i  = %i\n",
+			ai_32, bi_32, ci_32);
+
 	no_rtos_loop();
 
 	/* Start standard demo/test application flash tasks.  See the comments at
@@ -395,8 +412,6 @@ int main(void)
 	execution does reach here, then it is highly probably that the heap size
 	is too small for the idle and/or timer tasks to be created within
 	vTaskStartScheduler(). */
-
-	//	no_rtos_loop();
 
 	return EXIT_SUCCESS;
 }
