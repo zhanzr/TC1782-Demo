@@ -238,7 +238,7 @@ int32_t xPortStartScheduler( void )
 	prvSetupTimerInterrupt();
 
 	/* Install the Trap Handlers. */
-	vTrapInstallHandlers();
+//	vTrapInstallHandlers();
 
 	/* Install the Syscall Handler for yield calls. */
 	if( 0 == _install_trap_handler( portSYSCALL_TRAP, prvTrapYield ) )

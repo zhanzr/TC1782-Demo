@@ -274,6 +274,7 @@ void vContextManagementTrap( int iTrapIdentification )
 		case portTIN_CM_CONTEXT_TYPE:
 		case portTIN_CM_NESTING_ERROR:
 		default:
+			printf("%s %d\n", __func__, iTrapIdentification);
 			_debug();
 			break;
 	}

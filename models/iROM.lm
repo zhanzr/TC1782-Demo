@@ -78,7 +78,7 @@
       <Reservation Description="Section for heap" Name=".heap" Size="2" Alignment="8" Unit="KB">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
-      <Reservation Description="Section for CSA" Name=".csa" Size="4" Alignment="64" Unit="KB">
+      <Reservation Description="Section for CSA" Name=".csa" Size="2" Alignment="64" Unit="KB">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
     </MemoryReservation>

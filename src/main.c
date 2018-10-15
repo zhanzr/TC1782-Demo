@@ -225,6 +225,10 @@ void print_csa_reg(void)
 
 	tmp_u32 = _mfcr(PSW_ADDR);
 	printf("PSW_ADDR\t%08X\t:%08X\n", PSW_ADDR, tmp_u32);
+	tmp_u32 = _mfcr(SYSCON_ADDR);
+	printf("SYSCON\t%08X\t:%08X\n", SYSCON_ADDR, tmp_u32);
+	tmp_u32 = _mfcr(COMPAT_ADDR);
+	printf("COMPAT\t%08X\t:%08X\n", COMPAT_ADDR, tmp_u32);
 
 	tmp_u32 = _mfcr(FCX_ADDR);
 	printf("FCX\t%08X\t:%08X %08X\n", FCX_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
@@ -252,11 +256,14 @@ void print_csa_reg(void)
 //		printf("%08X ", *(uint32_t*)(t_begin+4));
 //	}
 //	printf("\n");
+
+	_isync();
+	_dsync();
 }
 
 void test_call_1(uint32_t in)
 {
-	if(1==in)
+	if(2==in)
 	{
 		printf("%s %u\n", __func__, in);
 		print_csa_reg();
@@ -292,10 +299,6 @@ void no_rtos_loop(void)
 				__TRICORE_NAME__,
 				_NEWLIB_VERSION
 		);
-
-		test_call_1(5);
-		test_call_2();
-		test_call_3();
 
 		LEDTOGGLE(0);
 		LEDTOGGLE(1);
@@ -348,6 +351,10 @@ int main(void)
 
 	lock_wdtcon();
 
+	extern void vTrapInstallHandlers( void );
+	/* Install the Trap Handlers. */
+	vTrapInstallHandlers();
+
 	// CSA Experimentation
 	printf("errno %d @ %08X %P\n",
 			errno,
@@ -362,6 +369,8 @@ int main(void)
 	volatile uint32_t tmp_u32;
 	tmp_u32 = _mfcr(CPU_ID_ADDR);
 	printf("CPUID\t%08X\t:%08X\n", &CPU_ID, tmp_u32);
+	tmp_u32 = _mfcr(SYSCON_ADDR);
+	printf("SYSCON\t%08X\t:%08X\n", SYSCON_ADDR, tmp_u32);
 	tmp_u32 = _mfcr(PSW_ADDR);
 	printf("PSW_ADDR\t%08X\t:%08X\n", PSW_ADDR, tmp_u32);
 
@@ -372,17 +381,25 @@ int main(void)
 	tmp_u32 = _mfcr(PCXI_ADDR);
 	printf("PCXI\t%08X\t:%08X %08X\n", PCXI_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
 
-	int32_t ai_32 = 1000;
-	int32_t bi_32 = 20;
-	int32_t ci_32 = ai_32/bi_32;
-	printf("%i / %i  = %i\n",
-			ai_32, bi_32, ci_32);
+	{
+		int32_t ai_32 = 2000;
+		int32_t bi_32 = 3;
+		int32_t ci_32 = ai_32/bi_32;
+		printf("%i / %i  = %i\n",
+				ai_32, bi_32, ci_32);
+	}
 
-	ai_32 = 300000;
-	bi_32 = 33;
-	ci_32 = ai_32/bi_32;
-	printf("%i / %i  = %i\n",
-			ai_32, bi_32, ci_32);
+	{
+		int16_t ai_16 = 1000;
+		int16_t bi_16 = 2;
+		int16_t ci_16 = ai_16/bi_16;
+		printf("%i / %i  = %i\n",
+				ai_16, bi_16, ci_16);
+	}
+
+	test_call_1(10);
+	test_call_2();
+	test_call_3();
 
 	no_rtos_loop();
 
