@@ -309,7 +309,7 @@ void no_rtos_loop(void)
 		//			LEDTOGGLE(6);
 		//			LEDTOGGLE(7);
 
-		simple_delay(10000);
+		simple_delay(20000);
 	}
 }
 
@@ -325,7 +325,14 @@ typedef union union_pack64
 	int8_t i8[8];
 }pack64;
 
-pack64 Ifx_Div(int32_t inputA, int32_t inputB);
+div_t Ifx_Div(int32_t inputA, int32_t inputB);
+uint32_t Ifx_Get_D5(void);
+
+div_t Ifx_Div_test1(int32_t inputA, int32_t inputB);
+div_t Ifx_Div_test2(int32_t inputA, int32_t inputB);
+div_t Ifx_Div_test3(int32_t inputA, int32_t inputB);
+div_t Ifx_Div_test4(int32_t inputA, int32_t inputB);
+div_t Ifx_Div_test5(int32_t inputA, int32_t inputB);
 
 int main(void)
 {
@@ -395,45 +402,79 @@ int main(void)
 	tmp_u32 = _mfcr(PCXI_ADDR);
 	printf("PCXI\t%08X\t:%08X %08X\n", PCXI_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
 
+	printf("LibC Division\n");
 	{
-		int32_t ai_32 = 2000;
-		int32_t bi_32 = 3;
+		int32_t ai_32 = 0x1000;
+		int32_t bi_32 = 0x21;
 		int32_t ci_32 = ai_32/bi_32;
 		int32_t di_32 = ai_32%bi_32;
-		printf("%i / %i  = %i, %i\n",
+		printf("%08X / %08X  = %08X, %08X\n",
 				ai_32, bi_32, ci_32, di_32);
 	}
 
+	printf("Division test 1\n");
 	{
-		int16_t ai_16 = 1000;
-		int16_t bi_16 = 6;
-		int16_t ci_16 = ai_16/bi_16;
-		int16_t di_16 = ai_16%bi_16;
-		printf("%i / %i  = %i, %i\n",
-				ai_16, bi_16, ci_16, di_16);
+		int32_t ai_32 = 0x1000;
+		int32_t bi_32 = 0x21;
+		div_t res_div;
+		res_div = Ifx_Div_test1(ai_32, bi_32);
+		printf("%08X / %08X  = %08X, %08X, %08X\n",
+				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
 	}
 
+	printf("Division test 2\n");
 	{
-		int32_t ai_32 = 2000;
-		int32_t bi_32 = 3;
-		pack64 res_p_64;
-		res_p_64 = Ifx_Div(ai_32, bi_32);
-		printf("%i / %i  = %i, %i\n",
-				ai_32, bi_32, res_p_64.i32[0], res_p_64.i32[1]);
+		int32_t ai_32 = 0x1000;
+		int32_t bi_32 = 0x21;
+		div_t res_div;
+		res_div = Ifx_Div_test2(ai_32, bi_32);
+		printf("%08X / %08X  = %08X, %08X, %08X\n",
+				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
 	}
 
+	printf("Division test 3\n");
 	{
-		int32_t ai_32 = 1000;
-		int32_t bi_32 = 6;
-		pack64 res_p_64;
-		res_p_64 = Ifx_Div(ai_32, bi_32);
-		printf("%i / %i  = %i, %i\n",
-				ai_32, bi_32, res_p_64.i32[0], res_p_64.i32[1]);
+		int32_t ai_32 = 0x1000;
+		int32_t bi_32 = 0x21;
+		div_t res_div;
+		res_div = Ifx_Div_test3(ai_32, bi_32);
+		printf("%08X / %08X  = %08X, %08X, %08X\n",
+				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
 	}
 
-	test_call_1(10);
-	test_call_2();
-	test_call_3();
+	printf("Division test 4\n");
+	{
+		int32_t ai_32 = 0x1000;
+		int32_t bi_32 = 0x21;
+		div_t res_div;
+		res_div = Ifx_Div_test4(ai_32, bi_32);
+		printf("%08X / %08X  = %08X, %08X, %08X\n",
+				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
+	}
+
+	printf("Division test 5\n");
+	{
+		int32_t ai_32 = 0x1000;
+		int32_t bi_32 = 0x21;
+		div_t res_div;
+		res_div = Ifx_Div_test5(ai_32, bi_32);
+		printf("%08X / %08X  = %08X, %08X, %08X\n",
+				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
+	}
+
+	printf("ASM Division call\n");
+	{
+		int32_t ai_32 = 0x1000;
+		int32_t bi_32 = 0x21;
+		div_t res_div;
+		res_div = Ifx_Div(ai_32, bi_32);
+		printf("%08X / %08X  = %08X, %08X, %08X\n",
+				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
+	}
+
+//	test_call_1(10);
+//	test_call_2();
+//	test_call_3();
 
 	no_rtos_loop();
 
