@@ -213,9 +213,10 @@ extern void __CSA_END(void);
 
 #define	CSA_ITEM_SIZE	64
 
-void test_call_1(uint32_t in);
-void test_call_2(void);
-void test_call_3(void);
+extern void __PMI_SPRAM_BEGIN(void);
+extern void __PMI_SPRAM_SIZE(void);
+extern void __DMI_LDRAM_BEGIN(void);
+extern void __DMI_LDRAM_SIZE(void);
 
 void print_csa_reg(void)
 {
@@ -261,34 +262,22 @@ void print_csa_reg(void)
 	_dsync();
 }
 
-void test_call_1(uint32_t in)
+void test_func_flash(void)
 {
-	if(2==in)
-	{
-		printf("%s %u\n", __func__, in);
-		print_csa_reg();
-	}
-	else
-	{
-		printf("%s %u\n", __func__, in);
-		print_csa_reg();
-
-		test_call_1(in-1);
-	}
+	printf("%s @ %08X\n", __func__, test_func_flash);
 }
 
-void test_call_2(void)
+#pragma section ".internalcode" ax
+void test_func_spram_1(void)
 {
-	printf("%s\n", __func__);
-	print_csa_reg();
+	printf("%s @ %08X\n", __func__, test_func_spram_1);
 }
 
-void test_call_3(void)
+void test_func_spram_2(void)
 {
-	printf("%s\n", __func__);
-	print_csa_reg();
-	test_call_2();
+	printf("%s @ %08X\n", __func__, test_func_spram_2);
 }
+#pragma section
 
 void no_rtos_loop(void)
 {
@@ -300,14 +289,18 @@ void no_rtos_loop(void)
 				_NEWLIB_VERSION
 		);
 
+		test_func_flash();
+		test_func_spram_1();
+		test_func_spram_2();
+
 		LEDTOGGLE(0);
 		LEDTOGGLE(1);
-		//			LEDTOGGLE(2);
-		//			LEDTOGGLE(3);
-		//			LEDTOGGLE(4);
-		//			LEDTOGGLE(5);
-		//			LEDTOGGLE(6);
-		//			LEDTOGGLE(7);
+		LEDTOGGLE(2);
+		LEDTOGGLE(3);
+		LEDTOGGLE(4);
+		LEDTOGGLE(5);
+		LEDTOGGLE(6);
+		LEDTOGGLE(7);
 
 		simple_delay(20000);
 	}
@@ -334,6 +327,7 @@ div_t Ifx_Div_test3(int32_t inputA, int32_t inputB);
 div_t Ifx_Div_test4(int32_t inputA, int32_t inputB);
 div_t Ifx_Div_test5(int32_t inputA, int32_t inputB);
 
+#define	direct_read(a)	(*(uint32_t*)a)
 int main(void)
 {
 	_init_uart(mainCOM_TEST_BAUD_RATE);
@@ -387,13 +381,42 @@ int main(void)
 	printf("__CSA_SIZE\t:%08X\n", (uint32_t)__CSA_SIZE);
 	printf("__CSA_END\t:%08X\n", (uint32_t)__CSA_END);
 
+	printf("__PMI_SPRAM_BEGIN\t:%08X\n", (uint32_t)__PMI_SPRAM_BEGIN);
+	printf("__PMI_SPRAM_SIZE\t:%08X\n", (uint32_t)__PMI_SPRAM_SIZE);
+	printf("__DMI_LDRAM_BEGIN\t:%08X\n", (uint32_t)__DMI_LDRAM_BEGIN);
+	printf("__DMI_LDRAM_SIZE\t:%08X\n", (uint32_t)__DMI_LDRAM_SIZE);
+
 	volatile uint32_t tmp_u32;
 	tmp_u32 = _mfcr(CPU_ID_ADDR);
 	printf("CPUID\t%08X\t:%08X\n", &CPU_ID, tmp_u32);
 	tmp_u32 = _mfcr(SYSCON_ADDR);
 	printf("SYSCON\t%08X\t:%08X\n", SYSCON_ADDR, tmp_u32);
 	tmp_u32 = _mfcr(PSW_ADDR);
-	printf("PSW_ADDR\t%08X\t:%08X\n", PSW_ADDR, tmp_u32);
+	printf("PSW\t%08X\t:%08X\n", PSW_ADDR, tmp_u32);
+	tmp_u32 = _mfcr(MMU_CON_ADDR);
+	printf("MMU_CON\t%08X\t:%08X\n", MMU_CON_ADDR, tmp_u32);
+	tmp_u32 = _mfcr(FPU_ID_ADDR);
+	printf("FPU_ID\t%08X\t:%08X\n", FPU_ID_ADDR, tmp_u32);
+
+	tmp_u32 = direct_read(PMI_ID_ADDR);
+	printf("PMI_ID\t%08X\t:%08X\n", PMI_ID_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_CON0_ADDR);
+	printf("PMI_CON0\t%08X\t:%08X\n", PMI_CON0_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_CON1_ADDR);
+	printf("PMI_CON1\t%08X\t:%08X\n", PMI_CON1_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_CON2_ADDR);
+	printf("PMI_CON2\t%08X\t:%08X\n", PMI_CON2_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_STR_ADDR);
+	printf("PMI_STR\t%08X\t:%08X\n", PMI_STR_ADDR, tmp_u32);
+
+	tmp_u32 = direct_read(DMI_ID_ADDR);
+	printf("DMI_ID\t%08X\t:%08X\n", DMI_ID_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_CON_ADDR);
+	printf("DMI_CON\t%08X\t:%08X\n", DMI_CON_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_STR_ADDR);
+	printf("DMI_STR\t%08X\t:%08X\n", DMI_STR_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_ATR_ADDR);
+	printf("DMI_ATR\t%08X\t:%08X\n", DMI_ATR_ADDR, tmp_u32);
 
 	tmp_u32 = _mfcr(FCX_ADDR);
 	printf("FCX\t%08X\t:%08X %08X\n", FCX_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
@@ -402,79 +425,30 @@ int main(void)
 	tmp_u32 = _mfcr(PCXI_ADDR);
 	printf("PCXI\t%08X\t:%08X %08X\n", PCXI_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
 
-	printf("LibC Division\n");
-	{
-		int32_t ai_32 = 0x1000;
-		int32_t bi_32 = 0x21;
-		int32_t ci_32 = ai_32/bi_32;
-		int32_t di_32 = ai_32%bi_32;
-		printf("%08X / %08X  = %08X, %08X\n",
-				ai_32, bi_32, ci_32, di_32);
-	}
-
-	printf("Division test 1\n");
-	{
-		int32_t ai_32 = 0x1000;
-		int32_t bi_32 = 0x21;
-		div_t res_div;
-		res_div = Ifx_Div_test1(ai_32, bi_32);
-		printf("%08X / %08X  = %08X, %08X, %08X\n",
-				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
-	}
-
-	printf("Division test 2\n");
-	{
-		int32_t ai_32 = 0x1000;
-		int32_t bi_32 = 0x21;
-		div_t res_div;
-		res_div = Ifx_Div_test2(ai_32, bi_32);
-		printf("%08X / %08X  = %08X, %08X, %08X\n",
-				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
-	}
-
-	printf("Division test 3\n");
-	{
-		int32_t ai_32 = 0x1000;
-		int32_t bi_32 = 0x21;
-		div_t res_div;
-		res_div = Ifx_Div_test3(ai_32, bi_32);
-		printf("%08X / %08X  = %08X, %08X, %08X\n",
-				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
-	}
-
-	printf("Division test 4\n");
-	{
-		int32_t ai_32 = 0x1000;
-		int32_t bi_32 = 0x21;
-		div_t res_div;
-		res_div = Ifx_Div_test4(ai_32, bi_32);
-		printf("%08X / %08X  = %08X, %08X, %08X\n",
-				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
-	}
-
-	printf("Division test 5\n");
-	{
-		int32_t ai_32 = 0x1000;
-		int32_t bi_32 = 0x21;
-		div_t res_div;
-		res_div = Ifx_Div_test5(ai_32, bi_32);
-		printf("%08X / %08X  = %08X, %08X, %08X\n",
-				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
-	}
-
-	printf("ASM Division call\n");
-	{
-		int32_t ai_32 = 0x1000;
-		int32_t bi_32 = 0x21;
-		div_t res_div;
-		res_div = Ifx_Div(ai_32, bi_32);
-		printf("%08X / %08X  = %08X, %08X, %08X\n",
-				ai_32, bi_32, res_div.quot, res_div.rem, Ifx_Get_D5());
-	}
-
-//	test_call_1(10);
-//	test_call_2();
-//	test_call_3();
+	//SPRAM full march test
+//	{
+//		//Write
+//		for(uint32_t spram_base = (uint32_t)__PMI_SPRAM_BEGIN;
+//				spram_base<(uint32_t)__PMI_SPRAM_BEGIN+(uint32_t)__PMI_SPRAM_SIZE;
+//				spram_base+=4)
+//		{
+//			*(uint32_t*)spram_base = spram_base;
+//		}
+//
+//		//Read
+//		for(uint32_t spram_base = (uint32_t)__PMI_SPRAM_BEGIN;
+//				spram_base<(uint32_t)__PMI_SPRAM_BEGIN+(uint32_t)__PMI_SPRAM_SIZE;
+//				spram_base+=4)
+//		{
+//			if(spram_base != *(uint32_t*)spram_base)
+//			{
+//				printf("%08X %08X\n", spram_base, *(uint32_t*)spram_base);
+//				break;
+//			}
+//		}
+//
+//		printf("SPRAM test OK\n");
+//	}
 
 	no_rtos_loop();
 

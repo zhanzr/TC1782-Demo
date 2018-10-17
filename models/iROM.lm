@@ -23,6 +23,9 @@
       <DeepOutputSection Description="Exception handling frame for C++ exceptions" Name=".eh_frame" RuntimeAddressVMA="//@LocalAliases/@Alias.1">
         <InputEntry Description="Exception handling frame for C++ exceptions" Name=".eh_frame" InputSection="//@Input/@InputSection.15"/>
       </DeepOutputSection>
+      <DeepOutputSection Name=".internalcode" RuntimeAddressVMA="//@LocalAliases/@Alias.2" LoadMachineAddressLMA="//@LocalAliases/@Alias.1">
+        <InputEntry Name=".internalcode" InputSection="//@Input/@InputSection.19" KEEP="true"/>
+      </DeepOutputSection>
     </Code>
     <Data>
       <Absolute>
@@ -109,6 +112,7 @@
     <InputSection Description="Bit variables" Name=".bdata"/>
     <InputSection Description=".zdata.rodata" Name=".zdata.rodata"/>
     <InputSection Description=".zrodata" Name=".zrodata"/>
+    <InputSection Description="Internal Code" Name=".internalcode"/>
   </Input>
   <Files>
     <ObjectFile Name="src\uart_init_poll.o"/>
@@ -151,6 +155,9 @@
     </Alias>
     <Alias Description="Alias for Code" Name="CODE">
       <Region href="TriBoard-TC1782.mdm#//@Memory.0/@Region.0"/>
+    </Alias>
+    <Alias Description="Ram Code" Name="RAMCODE">
+      <Region href="TriBoard-TC1782.mdm#//@Memory.1/@Region.0"/>
     </Alias>
   </LocalAliases>
 </LinkerModel:LinkerDescriptionFile>
