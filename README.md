@@ -1,8 +1,8 @@
 FreeRTOS Demo for TC1782.
 
-FreeRTOS Example 26.
+FreeRTOS Example 27.
 
 Content:
 
-	Demo for Code in RAM.
+	Demo for Dhrystone benchmark and PSPR optimazation.
 

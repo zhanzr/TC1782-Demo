@@ -24,11 +24,10 @@
 #include "task.h"
 #include "semphr.h"
 
-extern int g_cmp1_ret;
-
 volatile uint64_t FreeRTOSRunTimeTicks;
 
-#define CMP1_MATCH_VAL	( configPERIPHERAL_CLOCK_HZ /  configRUN_TIME_STATS_RATE_HZ)
+//#define CMP1_MATCH_VAL	( configPERIPHERAL_CLOCK_HZ /  configRUN_TIME_STATS_RATE_HZ)
+#define CMP1_MATCH_VAL	( configPERIPHERAL_CLOCK_HZ /  1000)
 
 const uint64_t GetFreeRTOSRunTimeTicks(void)
 {
@@ -50,7 +49,7 @@ void ConfigureTimeForRunTimeStats(void)
 {
 	FreeRTOSRunTimeTicks = 0;
 
-	taskENTER_CRITICAL();
+//	taskENTER_CRITICAL();
 	{
 		/* Determine how many bits are used without changing other bits in the CMCON register. */
 		STM_CMCON.bits.MSIZE1 &= ~0x1fUL;
@@ -81,5 +80,5 @@ void ConfigureTimeForRunTimeStats(void)
 			configASSERT( ( ( volatile void * ) NULL ) );
 		}
 	}
-	taskEXIT_CRITICAL();
+//	taskEXIT_CRITICAL();
 }

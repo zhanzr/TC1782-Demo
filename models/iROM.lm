@@ -72,13 +72,13 @@
       </Normal>
     </Data>
     <MemoryReservation>
-      <Reservation Description="Section for ustack" Name=".ustack" Size="1" Alignment="8" Unit="KB" Grows="downwards">
+      <Reservation Description="Section for ustack" Name=".ustack" Size="8" Alignment="8" Unit="KB" Grows="downwards">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
-      <Reservation Description="Section for istack" Name=".istack" Size="256" Alignment="8" Unit="B" Grows="downwards">
+      <Reservation Description="Section for istack" Name=".istack" Size="1" Alignment="8" Unit="KB" Grows="downwards">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
-      <Reservation Description="Section for heap" Name=".heap" Size="2" Alignment="8" Unit="KB">
+      <Reservation Description="Section for heap" Name=".heap" Size="4" Alignment="8" Unit="KB">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
       <Reservation Description="Section for CSA" Name=".csa" Size="16" Alignment="64" Unit="KB">
@@ -112,7 +112,7 @@
     <InputSection Description="Bit variables" Name=".bdata"/>
     <InputSection Description=".zdata.rodata" Name=".zdata.rodata"/>
     <InputSection Description=".zrodata" Name=".zrodata"/>
-    <InputSection Description="Internal Code" Name=".internalcode"/>
+    <InputSection Name=".internalcode"/>
   </Input>
   <Files>
     <ObjectFile Name="src\uart_init_poll.o"/>
@@ -148,6 +148,7 @@
     <ObjectFile Name="src\FreeRTOS_Source\portable\MemMang\heap_4.o"/>
     <ObjectFile Name="src\FreeRTOS_Source\event_groups.o"/>
     <ObjectFile Name="src\asm_call.o"/>
+    <ObjectFile Name="src\dhry_2.o"/>
   </Files>
   <LocalAliases>
     <Alias Description="Alias for RAM" Name="DATA">
