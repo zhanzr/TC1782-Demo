@@ -7,10 +7,10 @@
     <Region Description="Boot ROM (BROM)" Name="BROM" Begin="0xAFFFC000" Attributes="rx!p" Length="16" LengthUnit="KB"/>
   </Memory>
   <Memory Description="Program Memory Interface (PMI)" Name="Program Interface">
-    <Region Description="Scratch-Pad RAM (SPRAM)" Name="PMI_SPRAM" Begin="0xC0000000" Attributes="wx!p" Length="40" LengthUnit="KB"/>
+    <Region Description="Scratch-Pad RAM (SPRAM)" Name="PMI_SPRAM" Begin="0xC0000000" Attributes="wx!p" Length="24" LengthUnit="KB"/>
   </Memory>
   <Memory Description="Data Memory Interface (DMI)" Name="Data Interface">
-    <Region Description="Local Data RAM (LDRAM)" Name="DMI_LDRAM" Begin="0xD0000000" Attributes="w!xp" Length="128" LengthUnit="KB"/>
+    <Region Description="Local Data RAM (LDRAM)" Name="DMI_LDRAM" Begin="0xD0000000" Attributes="w!xp" Length="124" LengthUnit="KB"/>
   </Memory>
   <Memory Description="PCP Memory" Name="PCP">
     <Region Description="PCP Code Memory (CMEM)" Name="PCP_CMEM" Begin="0xF0060000" Attributes="rxp" Length="32" LengthUnit="KB"/>

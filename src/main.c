@@ -17,7 +17,7 @@
 
 #include "dhry.h"
 
-#define RUN_NUMBER	1000000
+#define RUN_NUMBER	2000000
 
 extern void __CSA_BEGIN(void);
 extern void __CSA(void);
@@ -32,6 +32,7 @@ extern void __DMI_LDRAM_BEGIN(void);
 extern void __DMI_LDRAM_SIZE(void);
 
 #define	direct_read(a)	(*(uint32_t*)a)
+#define	direct_write(a, v)	{(*(uint32_t*)a)=v;}
 
 void enable_performance_cnt(void)
 {
@@ -46,9 +47,9 @@ void enable_performance_cnt(void)
 		_mtcr(PSW_ADDR, tmpPSW.reg);
 		_isync();
 	}
-	lock_wdtcon();
-
-	unlock_wdtcon();
+//	lock_wdtcon();
+//
+//	unlock_wdtcon();
 	{
 		CCTRL_t tmpCCTRL;
 		tmpCCTRL.reg = _mfcr(CCTRL_ADDR);
@@ -179,6 +180,134 @@ static void prvSetupHardware( void )
 	/* Initialise LED outputs. */
 	InitLED();
 }
+
+void Icache_en(uint8_t ic_size)
+{
+	uint8_t tmp_ic_cfg = 0;
+	uint8_t tmp_pm_cfg = 0;
+	uint32_t tmp_u32;
+	tmp_u32 = direct_read(PMI_CON0_ADDR);
+	printf("PMI_CON0\t%08X\t:%08X\n", PMI_CON0_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_CON1_ADDR);
+	printf("PMI_CON1\t%08X\t:%08X\n", PMI_CON1_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_CON2_ADDR);
+	printf("PMI_CON2\t%08X\t:%08X\n", PMI_CON2_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_STR_ADDR);
+	printf("PMI_STR\t%08X\t:%08X\n", PMI_STR_ADDR, tmp_u32);
+
+	printf("%s %u\n", __func__, ic_size);
+
+	switch(ic_size)
+	{
+	case 2:
+		tmp_ic_cfg = 1;
+		tmp_pm_cfg = 38;
+		break;
+	case 4:
+		tmp_ic_cfg = 2;
+		tmp_pm_cfg = 36;
+		break;
+	case 8:
+		tmp_ic_cfg = 3;
+		tmp_pm_cfg = 32;
+		break;
+	case 16:
+		tmp_ic_cfg = 4;
+		tmp_pm_cfg = 24;
+		break;
+
+	default:
+		//Disable the ICache
+		tmp_ic_cfg = 0;
+		tmp_pm_cfg = 40;
+		break;
+	}
+
+	unlock_wdtcon();
+	{
+		PMI_CON0_t tmpPMI_CON0;
+		tmpPMI_CON0.reg = direct_read(PMI_CON0_ADDR);
+		tmpPMI_CON0.bits.PCBYP = (0==tmp_ic_cfg)?1:0;
+		_dsync();
+		direct_write(PMI_CON0_ADDR, tmpPMI_CON0.reg);
+		_isync();
+
+		PMI_CON2_t tmpPMI_CON2;
+		tmpPMI_CON2.reg = direct_read(PMI_CON2_ADDR);
+		tmpPMI_CON2.bits.PC_SZ_CFG = tmp_ic_cfg;
+		tmpPMI_CON2.bits.PMEM_SZ_CFG = tmp_pm_cfg;
+		_dsync();
+		direct_write(PMI_CON2_ADDR, tmpPMI_CON2.reg);
+		_isync();
+	}
+	lock_wdtcon();
+
+	tmp_u32 = direct_read(PMI_CON0_ADDR);
+	printf("PMI_CON0\t%08X\t:%08X\n", PMI_CON0_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_CON1_ADDR);
+	printf("PMI_CON1\t%08X\t:%08X\n", PMI_CON1_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_CON2_ADDR);
+	printf("PMI_CON2\t%08X\t:%08X\n", PMI_CON2_ADDR, tmp_u32);
+	tmp_u32 = direct_read(PMI_STR_ADDR);
+	printf("PMI_STR\t%08X\t:%08X\n", PMI_STR_ADDR, tmp_u32);
+}
+
+void Dcache_en(uint8_t dc_size)
+{
+	uint32_t tmp_u32;
+	uint8_t tmp_dc_cfg = 0;
+	uint8_t tmp_dm_cfg = 0;
+	tmp_u32 = direct_read(DMI_ID_ADDR);
+	printf("DMI_ID\t%08X\t:%08X\n", DMI_ID_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_CON_ADDR);
+	printf("DMI_CON\t%08X\t:%08X\n", DMI_CON_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_STR_ADDR);
+	printf("DMI_STR\t%08X\t:%08X\n", DMI_STR_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_ATR_ADDR);
+	printf("DMI_ATR\t%08X\t:%08X\n", DMI_ATR_ADDR, tmp_u32);
+
+	printf("%s %u\n", __func__, dc_size);
+
+	switch(dc_size)
+	{
+	case 2:
+		tmp_dc_cfg = 1;
+		tmp_dm_cfg = 126;
+		break;
+
+	case 4:
+		tmp_dc_cfg = 2;
+		tmp_dm_cfg = 124;
+		break;
+
+	default:
+		tmp_dc_cfg = 0;
+		tmp_dm_cfg = 128;
+		break;
+	}
+
+	unlock_wdtcon();
+	{
+		DMI_CON_t tmpDMI_CON;
+		tmpDMI_CON.reg = direct_read(DMI_CON_ADDR);
+		tmpDMI_CON.bits.DC_SZ_CFG = tmp_dc_cfg;
+		tmpDMI_CON.bits.DMEM_SZ_CFG = tmp_dm_cfg;
+		_dsync();
+		direct_write(DMI_CON_ADDR, tmpDMI_CON.reg);
+		_isync();
+	}
+	lock_wdtcon();
+
+	tmp_u32 = direct_read(DMI_ID_ADDR);
+	printf("DMI_ID\t%08X\t:%08X\n", DMI_ID_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_CON_ADDR);
+	printf("DMI_CON\t%08X\t:%08X\n", DMI_CON_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_STR_ADDR);
+	printf("DMI_STR\t%08X\t:%08X\n", DMI_STR_ADDR, tmp_u32);
+	tmp_u32 = direct_read(DMI_ATR_ADDR);
+	printf("DMI_ATR\t%08X\t:%08X\n", DMI_ATR_ADDR, tmp_u32);
+}
+
 /*-----------------------------------------------------------*/
 
 /* Global Variables: */
@@ -229,8 +358,8 @@ float           Microseconds,
 Dhrystones_Per_Second;
 /* end of variables for time measurement */
 
-//#pragma section ".text" ax
-#pragma section ".internalcode" ax
+#pragma section ".text" ax
+//#pragma section ".internalcode" ax
 
 void Proc_1 (Rec_Pointer Ptr_Val_Par)
 /******************/
@@ -754,6 +883,12 @@ int main(void)
 	//	tmp_u32 = _mfcr(PCXI_ADDR);
 	//	printf("PCXI\t%08X\t:%08X %08X\n", PCXI_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
 
+	Icache_en(16);
+	Dcache_en(4);
+	dhry_benchmark();
+
+	Icache_en(0);
+	Dcache_en(0);
 	dhry_benchmark();
 
 	no_rtos_loop();
