@@ -23,9 +23,7 @@
       <DeepOutputSection Description="Exception handling frame for C++ exceptions" Name=".eh_frame" RuntimeAddressVMA="//@LocalAliases/@Alias.1">
         <InputEntry Description="Exception handling frame for C++ exceptions" Name=".eh_frame" InputSection="//@Input/@InputSection.15"/>
       </DeepOutputSection>
-      <DeepOutputSection Name=".internalcode" RuntimeAddressVMA="//@LocalAliases/@Alias.2" LoadMachineAddressLMA="//@LocalAliases/@Alias.1">
-        <InputEntry Name=".internalcode" InputSection="//@Input/@InputSection.19" KEEP="true"/>
-      </DeepOutputSection>
+      <DeepOutputSection Name=".internalcode" RuntimeAddressVMA="//@LocalAliases/@Alias.2" LoadMachineAddressLMA="//@LocalAliases/@Alias.1"/>
     </Code>
     <Data>
       <Absolute>
@@ -72,13 +70,13 @@
       </Normal>
     </Data>
     <MemoryReservation>
-      <Reservation Description="Section for ustack" Name=".ustack" Size="8" Alignment="8" Unit="KB" Grows="downwards">
+      <Reservation Description="Section for ustack" Name=".ustack" Size="10" Alignment="8" Unit="KB" Grows="downwards">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
-      <Reservation Description="Section for istack" Name=".istack" Size="1" Alignment="8" Unit="KB" Grows="downwards">
+      <Reservation Description="Section for istack" Name=".istack" Size="2" Alignment="8" Unit="KB" Grows="downwards">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
-      <Reservation Description="Section for heap" Name=".heap" Size="4" Alignment="8" Unit="KB">
+      <Reservation Description="Section for heap" Name=".heap" Size="6" Alignment="8" Unit="KB">
         <Region xsi:type="memorydescription:Region" href="TriBoard-TC1782.mdm#//@Memory.2/@Region.0"/>
       </Reservation>
       <Reservation Description="Section for CSA" Name=".csa" Size="16" Alignment="64" Unit="KB">
@@ -119,36 +117,10 @@
     <ObjectFile Name="src\uart_poll.o"/>
     <ObjectFile Name="src\timer.o"/>
     <ObjectFile Name="src\main.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\BlockQ.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\GenQTest.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\PollQ.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\QPeek.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\TimerDemo.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\blocktim.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\comtest.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\countsem.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\death.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\dynamic.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\flash.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\flop.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\integer.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\recmutex.o"/>
-    <ObjectFile Name="src\Common_Demo_Source\semtest.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\list.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\portable\GCC\TriCore_1782\port.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\portable\GCC\TriCore_1782\porttrap.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\portable\MemMang\heap_2.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\queue.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\tasks.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\timers.o"/>
-    <ObjectFile Name="src\InterruptNestTest.o"/>
-    <ObjectFile Name="src\ParTest.o"/>
     <ObjectFile Name="src\ThirdPartyCode\cpufreq.o"/>
-    <ObjectFile Name="src\serial.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\portable\MemMang\heap_4.o"/>
-    <ObjectFile Name="src\FreeRTOS_Source\event_groups.o"/>
     <ObjectFile Name="src\asm_call.o"/>
     <ObjectFile Name="src\dhry_2.o"/>
+    <ObjectFile Name="src\ParTest.o"/>
   </Files>
   <LocalAliases>
     <Alias Description="Alias for RAM" Name="DATA">

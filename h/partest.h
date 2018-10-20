@@ -25,47 +25,14 @@
  * 1 tab == 4 spaces!
  */
 
-/* Scheduler Includes. */
-//#include "FreeRTOS.h"
-#include <stdint.h>
+#ifndef PARTEST_H
+#define PARTEST_H
 
-/* Demo Includes. */
-#include "partest.h"
+#define partstDEFAULT_PORT_ADDRESS		( ( uint16_t ) 0x378 )
 
-/* Hardware specific includes. */
-#include <tc1782.h>
+void vParTestInitialise( void );
+void vParTestSetLED( uint32_t uxLED, uint32_t xValue );
+void vParTestToggleLED( uint32_t uxLED );
 
-/*---------------------------------------------------------------------------*/
+#endif
 
-void vParTestInitialise( void )
-{
-	/* The TriBoard TC1782 v2.1 has 8 LEDs connected to GPIO5. */
-	P5_IOCR0.reg = 0xC0C0C0C0UL;
-	P5_IOCR4.reg = 0xC0C0C0C0UL;
-	P5_PDR.reg = 0x00000000UL;
-	P5_OMR.reg = 0x0000FFFFUL;
-}
-/*---------------------------------------------------------------------------*/
-
-void vParTestSetLED( uint32_t uxLED, uint32_t xValue )
-{
-unsigned long ulBitPattern = 1UL << uxLED;
-
-	if( xValue != 0 )
-	{
-		P5_OMR.reg = ulBitPattern;
-	}
-	else
-	{
-		P5_OMR.reg = ulBitPattern << 16UL;
-	}
-}
-/*---------------------------------------------------------------------------*/
-
-void vParTestToggleLED( uint32_t uxLED )
-{
-unsigned long ulBitPattern = 1UL << uxLED;
-
-	P5_OMR.reg = ( ulBitPattern << 16 ) | ulBitPattern;
-}
-/*---------------------------------------------------------------------------*/

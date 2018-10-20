@@ -1,9 +1,9 @@
 /*====================================================================
-* Project:  Board Support Package (BSP)
-* Function: LEDs
-*
-* Copyright HighTec EDV-Systeme GmbH 1982-2015
-*====================================================================*/
+ * Project:  Board Support Package (BSP)
+ * Function: LEDs
+ *
+ * Copyright HighTec EDV-Systeme GmbH 1982-2015
+ *====================================================================*/
 
 #ifndef __LED_H__
 #define __LED_H__
@@ -16,26 +16,17 @@ extern "C" {
 
 static __inline void LEDON(int nr)
 {
-	if (nr < MAX_LED)
-	{
-		LED_ON(nr);
-	}
+	LED_ON(nr);
 }
 
 static __inline void LEDOFF(int nr)
 {
-	if (nr < MAX_LED)
-	{
-		LED_OFF(nr);
-	}
+	LED_OFF(nr);
 }
 
 static __inline void LEDTOGGLE(int nr)
 {
-	if (nr < MAX_LED)
-	{
-		LED_TOGGLE(nr);
-	}
+	LED_TOGGLE(nr);
 }
 
 static __inline void InitLED(void)

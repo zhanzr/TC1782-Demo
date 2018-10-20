@@ -17,19 +17,16 @@
 
 #include "timer.h"
 #include "cpufreq.h"
-#include "portmacro.h"
-#include "FreeRTOSConfig.h"
 
-#include "FreeRTOS.h"
-#include "task.h"
-#include "semphr.h"
+#define	configPERIPHERAL_CLOCK_HZ	90000000UL
+#define	configRUNTIME_STAT_INTERRUPT_PRIORITY	3
 
-volatile uint64_t FreeRTOSRunTimeTicks;
+volatile uint32_t FreeRTOSRunTimeTicks;
 
 //#define CMP1_MATCH_VAL	( configPERIPHERAL_CLOCK_HZ /  configRUN_TIME_STATS_RATE_HZ)
 #define CMP1_MATCH_VAL	( configPERIPHERAL_CLOCK_HZ /  1000)
 
-const uint64_t GetFreeRTOSRunTimeTicks(void)
+const uint32_t GetFreeRTOSRunTimeTicks(void)
 {
 	return FreeRTOSRunTimeTicks;
 }
@@ -48,6 +45,17 @@ static void prvStatTickHandler(int iArg)
 void ConfigureTimeForRunTimeStats(void)
 {
 	FreeRTOSRunTimeTicks = 0;
+
+	/* Set-up the clock divider. */
+	unlock_wdtcon();
+	{
+		/* Wait until access to Endint protected register is enabled. */
+		while( 0 != ( WDT_CON0.reg & 0x1UL ) );
+
+		/* RMC == 1 so STM Clock == FPI */
+		STM_CLC.bits.RMC = 1;
+	}
+	lock_wdtcon();
 
 //	taskENTER_CRITICAL();
 	{
@@ -77,7 +85,12 @@ void ConfigureTimeForRunTimeStats(void)
 		else
 		{
 			/* Failed to install the interrupt. */
-			configASSERT( ( ( volatile void * ) NULL ) );
+//			configASSERT( ( ( volatile void * ) NULL ) );
+			printf("Failed to install the interrupt.\n");
+			while(1)
+			{
+				_nop();
+			}
 		}
 	}
 //	taskEXIT_CRITICAL();
