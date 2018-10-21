@@ -17,7 +17,7 @@
 
 #include "dhry.h"
 
-#define RUN_NUMBER	2000000
+#define RUN_NUMBER	1500000
 
 extern void __CSA_BEGIN(void);
 extern void __CSA(void);
@@ -38,19 +38,6 @@ void enable_performance_cnt(void)
 {
 	unlock_wdtcon();
 	{
-		//Call Depth Counting
-		PSW_t tmpPSW;
-		tmpPSW.reg = _mfcr(PSW_ADDR);
-		tmpPSW.bits.CDE = 1;
-		tmpPSW.bits.CDC = 0x00;
-		_dsync();
-		_mtcr(PSW_ADDR, tmpPSW.reg);
-		_isync();
-	}
-//	lock_wdtcon();
-//
-//	unlock_wdtcon();
-	{
 		CCTRL_t tmpCCTRL;
 		tmpCCTRL.reg = _mfcr(CCTRL_ADDR);
 
@@ -58,8 +45,8 @@ void enable_performance_cnt(void)
 		//		tmpCCTRL.bits.M1 = 2;
 		//Data Cache Hit Count.
 		tmpCCTRL.bits.M1 = 3;
-		//Instruction Cache Miss Count
 
+		//Instruction Cache Miss Count
 		//		tmpCCTRL.bits.M2 = 1;
 		//Data Cache Clean Miss Count
 		tmpCCTRL.bits.M2 = 3;
@@ -127,7 +114,7 @@ void print_csa_reg(void)
 
 const uint32_t GetFreeRTOSRunTimeTicks(void);
 
-inline void HAL_Delay(uint32_t m)
+void HAL_Delay(uint32_t m)
 {
 	uint32_t c_tick = m + GetFreeRTOSRunTimeTicks();
 	while(c_tick > GetFreeRTOSRunTimeTicks())
@@ -164,14 +151,14 @@ inline void no_rtos_loop(void)
 	}
 }
 
-static void prvSetupHardware( void )
+void prvSetupHardware( void )
 {
 	extern void set_cpu_frequency(void);
 
 	/* Set-up the PLL. */
 	set_cpu_frequency();
 
-//	vParTestInitialise();
+	//	vParTestInitialise();
 
 	ConfigureTimeForRunTimeStats();
 
@@ -179,6 +166,8 @@ static void prvSetupHardware( void )
 
 	/* Initialise LED outputs. */
 	InitLED();
+
+	enable_performance_cnt();
 }
 
 void Icache_en(uint8_t ic_size)
@@ -186,16 +175,14 @@ void Icache_en(uint8_t ic_size)
 	uint8_t tmp_ic_cfg = 0;
 	uint8_t tmp_pm_cfg = 0;
 	uint32_t tmp_u32;
-	tmp_u32 = direct_read(PMI_CON0_ADDR);
-	printf("PMI_CON0\t%08X\t:%08X\n", PMI_CON0_ADDR, tmp_u32);
-	tmp_u32 = direct_read(PMI_CON1_ADDR);
-	printf("PMI_CON1\t%08X\t:%08X\n", PMI_CON1_ADDR, tmp_u32);
-	tmp_u32 = direct_read(PMI_CON2_ADDR);
-	printf("PMI_CON2\t%08X\t:%08X\n", PMI_CON2_ADDR, tmp_u32);
-	tmp_u32 = direct_read(PMI_STR_ADDR);
-	printf("PMI_STR\t%08X\t:%08X\n", PMI_STR_ADDR, tmp_u32);
-
-	printf("%s %u\n", __func__, ic_size);
+	//	tmp_u32 = direct_read(PMI_CON0_ADDR);
+	//	printf("PMI_CON0\t%08X\t:%08X\n", PMI_CON0_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(PMI_CON1_ADDR);
+	//	printf("PMI_CON1\t%08X\t:%08X\n", PMI_CON1_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(PMI_CON2_ADDR);
+	//	printf("PMI_CON2\t%08X\t:%08X\n", PMI_CON2_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(PMI_STR_ADDR);
+	//	printf("PMI_STR\t%08X\t:%08X\n", PMI_STR_ADDR, tmp_u32);
 
 	switch(ic_size)
 	{
@@ -242,14 +229,14 @@ void Icache_en(uint8_t ic_size)
 	}
 	lock_wdtcon();
 
-	tmp_u32 = direct_read(PMI_CON0_ADDR);
-	printf("PMI_CON0\t%08X\t:%08X\n", PMI_CON0_ADDR, tmp_u32);
-	tmp_u32 = direct_read(PMI_CON1_ADDR);
-	printf("PMI_CON1\t%08X\t:%08X\n", PMI_CON1_ADDR, tmp_u32);
-	tmp_u32 = direct_read(PMI_CON2_ADDR);
-	printf("PMI_CON2\t%08X\t:%08X\n", PMI_CON2_ADDR, tmp_u32);
-	tmp_u32 = direct_read(PMI_STR_ADDR);
-	printf("PMI_STR\t%08X\t:%08X\n", PMI_STR_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(PMI_CON0_ADDR);
+	//	printf("PMI_CON0\t%08X\t:%08X\n", PMI_CON0_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(PMI_CON1_ADDR);
+	//	printf("PMI_CON1\t%08X\t:%08X\n", PMI_CON1_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(PMI_CON2_ADDR);
+	//	printf("PMI_CON2\t%08X\t:%08X\n", PMI_CON2_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(PMI_STR_ADDR);
+	//	printf("PMI_STR\t%08X\t:%08X\n", PMI_STR_ADDR, tmp_u32);
 }
 
 void Dcache_en(uint8_t dc_size)
@@ -257,16 +244,14 @@ void Dcache_en(uint8_t dc_size)
 	uint32_t tmp_u32;
 	uint8_t tmp_dc_cfg = 0;
 	uint8_t tmp_dm_cfg = 0;
-	tmp_u32 = direct_read(DMI_ID_ADDR);
-	printf("DMI_ID\t%08X\t:%08X\n", DMI_ID_ADDR, tmp_u32);
-	tmp_u32 = direct_read(DMI_CON_ADDR);
-	printf("DMI_CON\t%08X\t:%08X\n", DMI_CON_ADDR, tmp_u32);
-	tmp_u32 = direct_read(DMI_STR_ADDR);
-	printf("DMI_STR\t%08X\t:%08X\n", DMI_STR_ADDR, tmp_u32);
-	tmp_u32 = direct_read(DMI_ATR_ADDR);
-	printf("DMI_ATR\t%08X\t:%08X\n", DMI_ATR_ADDR, tmp_u32);
-
-	printf("%s %u\n", __func__, dc_size);
+	//	tmp_u32 = direct_read(DMI_ID_ADDR);
+	//	printf("DMI_ID\t%08X\t:%08X\n", DMI_ID_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(DMI_CON_ADDR);
+	//	printf("DMI_CON\t%08X\t:%08X\n", DMI_CON_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(DMI_STR_ADDR);
+	//	printf("DMI_STR\t%08X\t:%08X\n", DMI_STR_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(DMI_ATR_ADDR);
+	//	printf("DMI_ATR\t%08X\t:%08X\n", DMI_ATR_ADDR, tmp_u32);
 
 	switch(dc_size)
 	{
@@ -298,14 +283,61 @@ void Dcache_en(uint8_t dc_size)
 	}
 	lock_wdtcon();
 
-	tmp_u32 = direct_read(DMI_ID_ADDR);
-	printf("DMI_ID\t%08X\t:%08X\n", DMI_ID_ADDR, tmp_u32);
-	tmp_u32 = direct_read(DMI_CON_ADDR);
-	printf("DMI_CON\t%08X\t:%08X\n", DMI_CON_ADDR, tmp_u32);
-	tmp_u32 = direct_read(DMI_STR_ADDR);
-	printf("DMI_STR\t%08X\t:%08X\n", DMI_STR_ADDR, tmp_u32);
-	tmp_u32 = direct_read(DMI_ATR_ADDR);
-	printf("DMI_ATR\t%08X\t:%08X\n", DMI_ATR_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(DMI_ID_ADDR);
+	//	printf("DMI_ID\t%08X\t:%08X\n", DMI_ID_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(DMI_CON_ADDR);
+	//	printf("DMI_CON\t%08X\t:%08X\n", DMI_CON_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(DMI_STR_ADDR);
+	//	printf("DMI_STR\t%08X\t:%08X\n", DMI_STR_ADDR, tmp_u32);
+	//	tmp_u32 = direct_read(DMI_ATR_ADDR);
+	//	printf("DMI_ATR\t%08X\t:%08X\n", DMI_ATR_ADDR, tmp_u32);
+}
+
+volatile uint32_t icnt_delta;
+volatile uint32_t ccnt_delta;
+volatile uint32_t m1_delta;
+volatile uint32_t m2_delta;
+volatile uint32_t m3_delta;
+
+void clear_perf_cnt(void)
+{
+	unlock_wdtcon();
+	{
+		ICNT_t tmpICNT;
+		tmpICNT.bits.SOvf = 0;
+		tmpICNT.bits.Count_Value = 0;
+
+		_dsync();
+		_isync();
+		_mtcr(ICNT_ADDR, tmpICNT.reg);
+		_dsync();
+		_isync();
+
+		_mtcr(CCNT_ADDR, tmpICNT.reg);
+		_dsync();
+		_isync();
+
+		_mtcr(M1CNT_ADDR, tmpICNT.reg);
+		_dsync();
+		_isync();
+
+		_mtcr(M2CNT_ADDR, tmpICNT.reg);
+		_dsync();
+		_isync();
+
+		_mtcr(M3CNT_ADDR, tmpICNT.reg);
+		_dsync();
+		_isync();
+	}
+	lock_wdtcon();
+
+	icnt_delta = _mfcr(ICNT_ADDR);
+	ccnt_delta = _mfcr(CCNT_ADDR);
+	m1_delta = _mfcr(M1CNT_ADDR);
+	m2_delta = _mfcr(M2CNT_ADDR);
+	m3_delta = _mfcr(M3CNT_ADDR);
+//	printf("Init_Value=[%08X, %08X, %08X, %08X, %08X]\n",
+//			icnt_delta, ccnt_delta, m1_delta, m2_delta, m3_delta);
 }
 
 /*-----------------------------------------------------------*/
@@ -447,155 +479,155 @@ void Proc_5 (void) /* without parameters */
 
 void Proc_6 (Enumeration Enum_Val_Par, Enumeration *Enum_Ref_Par)
 /*********************************/
-    /* executed once */
-    /* Enum_Val_Par == Ident_3, Enum_Ref_Par becomes Ident_2 */
+/* executed once */
+/* Enum_Val_Par == Ident_3, Enum_Ref_Par becomes Ident_2 */
 {
-  *Enum_Ref_Par = Enum_Val_Par;
-  if (! Func_3 (Enum_Val_Par))
-    /* then, not executed */
-    *Enum_Ref_Par = Ident_4;
-  switch (Enum_Val_Par)
-  {
-    case Ident_1:
-      *Enum_Ref_Par = Ident_1;
-      break;
-    case Ident_2:
-      if (Int_Glob > 100)
-        *Enum_Ref_Par = Ident_1;
-      else
-        *Enum_Ref_Par = Ident_4;
-      break;
-    case Ident_3: /* executed */
-      *Enum_Ref_Par = Ident_2;
-       break;
-    case Ident_4:
-       break;
-    case Ident_5:
-       *Enum_Ref_Par = Ident_3;
-       break;
-    } /* switch */
+	*Enum_Ref_Par = Enum_Val_Par;
+	if (! Func_3 (Enum_Val_Par))
+		/* then, not executed */
+		*Enum_Ref_Par = Ident_4;
+	switch (Enum_Val_Par)
+	{
+	case Ident_1:
+		*Enum_Ref_Par = Ident_1;
+		break;
+	case Ident_2:
+		if (Int_Glob > 100)
+			*Enum_Ref_Par = Ident_1;
+		else
+			*Enum_Ref_Par = Ident_4;
+		break;
+	case Ident_3: /* executed */
+	*Enum_Ref_Par = Ident_2;
+	break;
+	case Ident_4:
+		break;
+	case Ident_5:
+		*Enum_Ref_Par = Ident_3;
+		break;
+	} /* switch */
 } /* Proc_6 */
 
 
 void Proc_7 (One_Fifty Int_1_Par_Val,
-             One_Fifty Int_2_Par_Val,
-             One_Fifty *Int_Par_Ref )
+		One_Fifty Int_2_Par_Val,
+		One_Fifty *Int_Par_Ref )
 /**********************************************/
-    /* executed three times                                      */
-    /* first call:      Int_1_Par_Val == 2, Int_2_Par_Val == 3,  */
-    /*                  Int_Par_Ref becomes 7                    */
-    /* second call:     Int_1_Par_Val == 10, Int_2_Par_Val == 5, */
-    /*                  Int_Par_Ref becomes 17                   */
-    /* third call:      Int_1_Par_Val == 6, Int_2_Par_Val == 10, */
-    /*                  Int_Par_Ref becomes 18                   */
+/* executed three times                                      */
+/* first call:      Int_1_Par_Val == 2, Int_2_Par_Val == 3,  */
+/*                  Int_Par_Ref becomes 7                    */
+/* second call:     Int_1_Par_Val == 10, Int_2_Par_Val == 5, */
+/*                  Int_Par_Ref becomes 17                   */
+/* third call:      Int_1_Par_Val == 6, Int_2_Par_Val == 10, */
+/*                  Int_Par_Ref becomes 18                   */
 {
-  One_Fifty Int_Loc;
+	One_Fifty Int_Loc;
 
-  Int_Loc = Int_1_Par_Val + 2;
-  *Int_Par_Ref = Int_2_Par_Val + Int_Loc;
+	Int_Loc = Int_1_Par_Val + 2;
+	*Int_Par_Ref = Int_2_Par_Val + Int_Loc;
 } /* Proc_7 */
 
 
 void Proc_8 (Arr_1_Dim Arr_1_Par_Ref,
-             Arr_2_Dim Arr_2_Par_Ref,
-             int Int_1_Par_Val,
-             int Int_2_Par_Val)
+		Arr_2_Dim Arr_2_Par_Ref,
+		int Int_1_Par_Val,
+		int Int_2_Par_Val)
 /*********************************************************************/
-    /* executed once      */
-    /* Int_Par_Val_1 == 3 */
-    /* Int_Par_Val_2 == 7 */
+/* executed once      */
+/* Int_Par_Val_1 == 3 */
+/* Int_Par_Val_2 == 7 */
 {
-  REG One_Fifty Int_Index;
-  REG One_Fifty Int_Loc;
+	REG One_Fifty Int_Index;
+	REG One_Fifty Int_Loc;
 
-  Int_Loc = Int_1_Par_Val + 5;
-  Arr_1_Par_Ref [Int_Loc] = Int_2_Par_Val;
-  Arr_1_Par_Ref [Int_Loc+1] = Arr_1_Par_Ref [Int_Loc];
-  Arr_1_Par_Ref [Int_Loc+30] = Int_Loc;
-  for (Int_Index = Int_Loc; Int_Index <= Int_Loc+1; ++Int_Index)
-    Arr_2_Par_Ref [Int_Loc] [Int_Index] = Int_Loc;
-  Arr_2_Par_Ref [Int_Loc] [Int_Loc-1] += 1;
-  Arr_2_Par_Ref [Int_Loc+20] [Int_Loc] = Arr_1_Par_Ref [Int_Loc];
-  Int_Glob = 5;
+	Int_Loc = Int_1_Par_Val + 5;
+	Arr_1_Par_Ref [Int_Loc] = Int_2_Par_Val;
+	Arr_1_Par_Ref [Int_Loc+1] = Arr_1_Par_Ref [Int_Loc];
+	Arr_1_Par_Ref [Int_Loc+30] = Int_Loc;
+	for (Int_Index = Int_Loc; Int_Index <= Int_Loc+1; ++Int_Index)
+		Arr_2_Par_Ref [Int_Loc] [Int_Index] = Int_Loc;
+	Arr_2_Par_Ref [Int_Loc] [Int_Loc-1] += 1;
+	Arr_2_Par_Ref [Int_Loc+20] [Int_Loc] = Arr_1_Par_Ref [Int_Loc];
+	Int_Glob = 5;
 } /* Proc_8 */
 
 
 Enumeration Func_1 (Capital_Letter Ch_1_Par_Val, Capital_Letter Ch_2_Par_Val)
 /*************************************************/
-    /* executed three times                                         */
-    /* first call:      Ch_1_Par_Val == 'H', Ch_2_Par_Val == 'R'    */
-    /* second call:     Ch_1_Par_Val == 'A', Ch_2_Par_Val == 'C'    */
-    /* third call:      Ch_1_Par_Val == 'B', Ch_2_Par_Val == 'C'    */
+/* executed three times                                         */
+/* first call:      Ch_1_Par_Val == 'H', Ch_2_Par_Val == 'R'    */
+/* second call:     Ch_1_Par_Val == 'A', Ch_2_Par_Val == 'C'    */
+/* third call:      Ch_1_Par_Val == 'B', Ch_2_Par_Val == 'C'    */
 {
-  Capital_Letter        Ch_1_Loc;
-  Capital_Letter        Ch_2_Loc;
+	Capital_Letter        Ch_1_Loc;
+	Capital_Letter        Ch_2_Loc;
 
-  Ch_1_Loc = Ch_1_Par_Val;
-  Ch_2_Loc = Ch_1_Loc;
-  if (Ch_2_Loc != Ch_2_Par_Val)
-    /* then, executed */
-    return (Ident_1);
-  else  /* not executed */
-  {
-    Ch_1_Glob = Ch_1_Loc;
-    return (Ident_2);
-  }
+	Ch_1_Loc = Ch_1_Par_Val;
+	Ch_2_Loc = Ch_1_Loc;
+	if (Ch_2_Loc != Ch_2_Par_Val)
+		/* then, executed */
+		return (Ident_1);
+	else  /* not executed */
+	{
+		Ch_1_Glob = Ch_1_Loc;
+		return (Ident_2);
+	}
 } /* Func_1 */
 
 
 Boolean Func_2 (Str_30  Str_1_Par_Ref, Str_30  Str_2_Par_Ref)
 /*************************************************/
-    /* executed once */
-    /* Str_1_Par_Ref == "DHRYSTONE PROGRAM, 1'ST STRING" */
-    /* Str_2_Par_Ref == "DHRYSTONE PROGRAM, 2'ND STRING" */
+/* executed once */
+/* Str_1_Par_Ref == "DHRYSTONE PROGRAM, 1'ST STRING" */
+/* Str_2_Par_Ref == "DHRYSTONE PROGRAM, 2'ND STRING" */
 {
-  REG One_Thirty      Int_Loc;
-  Capital_Letter      Ch_Loc;
+	REG One_Thirty      Int_Loc;
+	Capital_Letter      Ch_Loc;
 
-  Int_Loc = 2;
-  while (Int_Loc <= 2) /* loop body executed once */
-    if (Func_1 (Str_1_Par_Ref[Int_Loc],
-                Str_2_Par_Ref[Int_Loc+1]) == Ident_1)
-    /* then, executed */
-    {
-      Ch_Loc = 'A';
-      Int_Loc += 1;
-    } /* if, while */
+	Int_Loc = 2;
+	while (Int_Loc <= 2) /* loop body executed once */
+		if (Func_1 (Str_1_Par_Ref[Int_Loc],
+				Str_2_Par_Ref[Int_Loc+1]) == Ident_1)
+			/* then, executed */
+		{
+			Ch_Loc = 'A';
+			Int_Loc += 1;
+		} /* if, while */
 
-  if (Ch_Loc >= 'W' && Ch_Loc < 'Z')
-    /* then, not executed */
-    Int_Loc = 7;
-  if (Ch_Loc == 'R')
-    /* then, not executed */
-    return (true);
-  else /* executed */
-  {
-    if (strcmp (Str_1_Par_Ref, Str_2_Par_Ref) > 0)
-      /* then, not executed */
-    {
-      Int_Loc += 7;
-      Int_Glob = Int_Loc;
-      return (true);
-    }
-    else /* executed */
-      return (false);
-  } /* if Ch_Loc */
+	if (Ch_Loc >= 'W' && Ch_Loc < 'Z')
+		/* then, not executed */
+		Int_Loc = 7;
+	if (Ch_Loc == 'R')
+		/* then, not executed */
+		return (true);
+	else /* executed */
+	{
+		if (strcmp (Str_1_Par_Ref, Str_2_Par_Ref) > 0)
+			/* then, not executed */
+		{
+			Int_Loc += 7;
+			Int_Glob = Int_Loc;
+			return (true);
+		}
+		else /* executed */
+			return (false);
+	} /* if Ch_Loc */
 } /* Func_2 */
 
 
 Boolean Func_3 (Enumeration Enum_Par_Val)
 /***************************/
-    /* executed once        */
-    /* Enum_Par_Val == Ident_3 */
+/* executed once        */
+/* Enum_Par_Val == Ident_3 */
 {
-  Enumeration Enum_Loc;
+	Enumeration Enum_Loc;
 
-  Enum_Loc = Enum_Par_Val;
-  if (Enum_Loc == Ident_3)
-    /* then, executed */
-    return (true);
-  else /* not executed */
-    return (false);
+	Enum_Loc = Enum_Par_Val;
+	if (Enum_Loc == Ident_3)
+		/* then, executed */
+		return (true);
+	else /* not executed */
+		return (false);
 } /* Func_3 */
 
 void dhry_benchmark(void)
@@ -726,58 +758,58 @@ void dhry_benchmark(void)
 	End_Time = GetFreeRTOSRunTimeTicks();
 #endif
 
-	printf ("Execution ends\n");
-	printf ("\n");
-	printf ("Final values of the variables used in the benchmark:\n");
-	printf ("\n");
-	printf( "Int_Glob:            %d\n", Int_Glob);
-	printf("        should be:   %d\n", 5);
-	printf( "Bool_Glob:           %d\n", Bool_Glob);
-	printf( "        should be:   %d\n", 1);
-	printf("Ch_1_Glob:           %c\n", Ch_1_Glob);
-	printf("        should be:   %c\n", 'A');
-	printf("Ch_2_Glob:           %c\n", Ch_2_Glob);
-	printf("        should be:   %c\n", 'B');
-	printf("Arr_1_Glob[8]:       %d\n", Arr_1_Glob[8]);
-	printf("        should be:   %d\n", 7);
-	printf("Arr_2_Glob[8][7]:    %d\n", Arr_2_Glob[8][7]);
-	printf ("        should be:   Number_Of_Runs + 10\n");
-	printf ("Ptr_Glob->\n");
-	printf("  Ptr_Comp:          %d\n", (int) Ptr_Glob->Ptr_Comp);
-	printf ("        should be:   (implementation-dependent)\n");
-	printf("  Discr:             %d\n", Ptr_Glob->Discr);
-	printf("        should be:   %d\n", 0);
-	printf("  Enum_Comp:         %d\n", Ptr_Glob->variant.var_1.Enum_Comp);
-	printf("        should be:   %d\n", 2);
-	printf("  Int_Comp:          %d\n", Ptr_Glob->variant.var_1.Int_Comp);
-	printf("        should be:   %d\n", 17);
-	printf("  Str_Comp:          %s\n", Ptr_Glob->variant.var_1.Str_Comp);
-	printf ("        should be:   DHRYSTONE PROGRAM, SOME STRING\n");
-	printf ("Next_Ptr_Glob->\n");
-	printf("  Ptr_Comp:          %d\n", (int) Next_Ptr_Glob->Ptr_Comp);
-	printf ("        should be:   (implementation-dependent), same as above\n");
-	printf("  Discr:             %d\n", Next_Ptr_Glob->Discr);
-	printf("        should be:   %d\n", 0);
-	printf("  Enum_Comp:         %d\n", Next_Ptr_Glob->variant.var_1.Enum_Comp);
-	printf("        should be:   %d\n", 1);
-	printf("  Int_Comp:          %d\n", Next_Ptr_Glob->variant.var_1.Int_Comp);
-	printf("        should be:   %d\n", 18);
-	printf("  Str_Comp:          %s\n",
-			Next_Ptr_Glob->variant.var_1.Str_Comp);
-	printf ("        should be:   DHRYSTONE PROGRAM, SOME STRING\n");
-	printf("Int_1_Loc:           %d\n", Int_1_Loc);
-	printf("        should be:   %d\n", 5);
-	printf("Int_2_Loc:           %d\n", Int_2_Loc);
-	printf("        should be:   %d\n", 13);
-	printf("Int_3_Loc:           %d\n", Int_3_Loc);
-	printf("        should be:   %d\n", 7);
-	printf("Enum_Loc:            %d\n", Enum_Loc);
-	printf("        should be:   %d\n", 1);
-	printf("Str_1_Loc:           %s\n", Str_1_Loc);
-	printf ("        should be:   DHRYSTONE PROGRAM, 1'ST STRING\n");
-	printf("Str_2_Loc:           %s\n", Str_2_Loc);
-	printf ("        should be:   DHRYSTONE PROGRAM, 2'ND STRING\n");
-	printf ("\n");
+	//	printf ("Execution ends\n");
+	//	printf ("\n");
+	//	printf ("Final values of the variables used in the benchmark:\n");
+	//	printf ("\n");
+	//	printf( "Int_Glob:            %d\n", Int_Glob);
+	//	printf("        should be:   %d\n", 5);
+	//	printf( "Bool_Glob:           %d\n", Bool_Glob);
+	//	printf( "        should be:   %d\n", 1);
+	//	printf("Ch_1_Glob:           %c\n", Ch_1_Glob);
+	//	printf("        should be:   %c\n", 'A');
+	//	printf("Ch_2_Glob:           %c\n", Ch_2_Glob);
+	//	printf("        should be:   %c\n", 'B');
+	//	printf("Arr_1_Glob[8]:       %d\n", Arr_1_Glob[8]);
+	//	printf("        should be:   %d\n", 7);
+	//	printf("Arr_2_Glob[8][7]:    %d\n", Arr_2_Glob[8][7]);
+	//	printf ("        should be:   Number_Of_Runs + 10\n");
+	//	printf ("Ptr_Glob->\n");
+	//	printf("  Ptr_Comp:          %d\n", (int) Ptr_Glob->Ptr_Comp);
+	//	printf ("        should be:   (implementation-dependent)\n");
+	//	printf("  Discr:             %d\n", Ptr_Glob->Discr);
+	//	printf("        should be:   %d\n", 0);
+	//	printf("  Enum_Comp:         %d\n", Ptr_Glob->variant.var_1.Enum_Comp);
+	//	printf("        should be:   %d\n", 2);
+	//	printf("  Int_Comp:          %d\n", Ptr_Glob->variant.var_1.Int_Comp);
+	//	printf("        should be:   %d\n", 17);
+	//	printf("  Str_Comp:          %s\n", Ptr_Glob->variant.var_1.Str_Comp);
+	//	printf ("        should be:   DHRYSTONE PROGRAM, SOME STRING\n");
+	//	printf ("Next_Ptr_Glob->\n");
+	//	printf("  Ptr_Comp:          %d\n", (int) Next_Ptr_Glob->Ptr_Comp);
+	//	printf ("        should be:   (implementation-dependent), same as above\n");
+	//	printf("  Discr:             %d\n", Next_Ptr_Glob->Discr);
+	//	printf("        should be:   %d\n", 0);
+	//	printf("  Enum_Comp:         %d\n", Next_Ptr_Glob->variant.var_1.Enum_Comp);
+	//	printf("        should be:   %d\n", 1);
+	//	printf("  Int_Comp:          %d\n", Next_Ptr_Glob->variant.var_1.Int_Comp);
+	//	printf("        should be:   %d\n", 18);
+	//	printf("  Str_Comp:          %s\n",
+	//			Next_Ptr_Glob->variant.var_1.Str_Comp);
+	//	printf ("        should be:   DHRYSTONE PROGRAM, SOME STRING\n");
+	//	printf("Int_1_Loc:           %d\n", Int_1_Loc);
+	//	printf("        should be:   %d\n", 5);
+	//	printf("Int_2_Loc:           %d\n", Int_2_Loc);
+	//	printf("        should be:   %d\n", 13);
+	//	printf("Int_3_Loc:           %d\n", Int_3_Loc);
+	//	printf("        should be:   %d\n", 7);
+	//	printf("Enum_Loc:            %d\n", Enum_Loc);
+	//	printf("        should be:   %d\n", 1);
+	//	printf("Str_1_Loc:           %s\n", Str_1_Loc);
+	//	printf ("        should be:   DHRYSTONE PROGRAM, 1'ST STRING\n");
+	//	printf("Str_2_Loc:           %s\n", Str_2_Loc);
+	//	printf ("        should be:   DHRYSTONE PROGRAM, 2'ND STRING\n");
+	//	printf ("\n");
 
 	User_Time = End_Time - Begin_Time;
 
@@ -796,7 +828,7 @@ void dhry_benchmark(void)
 		Microseconds = (float) User_Time * (float)Mic_secs_Per_Second
 				/ ((float) HZ * ((float) Number_Of_Runs));
 		Dhrystones_Per_Second = ((float) HZ * (float) Number_Of_Runs)
-	                        				/ (float) User_Time;
+	                        						/ (float) User_Time;
 #endif
 		printf("Microseconds for one run through Dhrystone[%d-%d]:  ", Begin_Time, End_Time);
 
@@ -810,10 +842,62 @@ void dhry_benchmark(void)
 
 #pragma section
 
+#pragma section ".text" ax
+uint32_t test_func_flash(void)
+{
+	printf("%s %p\n", __func__, test_func_flash);
+
+	volatile uint32_t a,b,c,d;
+	a= rand();
+	b= rand();
+	c= rand();
+	d= rand();
+	for(uint32_t i=0; i<10000; ++i)
+	{
+		a += b*c;
+		d /= a+c+rand();
+	}
+
+	return d;
+}
+#pragma section
+
+#pragma section ".internalcode" ax
+uint32_t test_func_spram(void)
+{
+	printf("%s %p\n", __func__, test_func_spram);
+
+	volatile uint32_t a,b,c,d;
+	a= rand();
+	b= rand();
+	c= rand();
+	d= rand();
+	for(uint32_t i=0; i<10000; ++i)
+	{
+		a += b*c;
+		d /= a+c+rand();
+	}
+
+	return d;
+}
+#pragma section
+
 int main(void)
 {
 	prvSetupHardware();
-	//	enable_performance_cnt();
+
+	unlock_wdtcon();
+	{
+		//Call Depth Counting
+		PSW_t tmpPSW;
+		tmpPSW.reg = _mfcr(PSW_ADDR);
+		tmpPSW.bits.CDE = 1;
+		tmpPSW.bits.CDC = 5;
+		_dsync();
+		_mtcr(PSW_ADDR, tmpPSW.reg);
+		_isync();
+	}
+	lock_wdtcon();
 
 	/* enable global interrupts */
 	_enable();
@@ -828,68 +912,60 @@ int main(void)
 	//	/* Install the Trap Handlers. */
 	//	vTrapInstallHandlers();
 
-	// CSA Experimentation
-	//	printf("errno %d @ %08X %p\n",
-	//			errno,
-	//			(uint32_t)&errno,
-	//			__errno );
-	//
-	//	printf("__CSA_BEGIN\t:%08X\n", (uint32_t)__CSA_BEGIN);
-	//	printf("__CSA\t:%08X\n", (uint32_t)__CSA);
-	//	printf("__CSA_SIZE\t:%08X\n", (uint32_t)__CSA_SIZE);
-	//	printf("__CSA_END\t:%08X\n", (uint32_t)__CSA_END);
-	//
-	//	printf("__PMI_SPRAM_BEGIN\t:%08X\n", (uint32_t)__PMI_SPRAM_BEGIN);
-	//	printf("__PMI_SPRAM_SIZE\t:%08X\n", (uint32_t)__PMI_SPRAM_SIZE);
-	//	printf("__DMI_LDRAM_BEGIN\t:%08X\n", (uint32_t)__DMI_LDRAM_BEGIN);
-	//	printf("__DMI_LDRAM_SIZE\t:%08X\n", (uint32_t)__DMI_LDRAM_SIZE);
-	//
-	//	volatile uint32_t tmp_u32;
-	//	tmp_u32 = _mfcr(CPU_ID_ADDR);
-	//	printf("CPUID\t%08X\t:%08X\n", &CPU_ID, tmp_u32);
-	//	tmp_u32 = _mfcr(SYSCON_ADDR);
-	//	printf("SYSCON\t%08X\t:%08X\n", SYSCON_ADDR, tmp_u32);
-	//	tmp_u32 = _mfcr(PSW_ADDR);
-	//	printf("PSW\t%08X\t:%08X\n", PSW_ADDR, tmp_u32);
-	//	tmp_u32 = _mfcr(MMU_CON_ADDR);
-	//	printf("MMU_CON\t%08X\t:%08X\n", MMU_CON_ADDR, tmp_u32);
-	//	tmp_u32 = _mfcr(FPU_ID_ADDR);
-	//	printf("FPU_ID\t%08X\t:%08X\n", FPU_ID_ADDR, tmp_u32);
-	//
-	//	tmp_u32 = direct_read(PMI_ID_ADDR);
-	//	printf("PMI_ID\t%08X\t:%08X\n", PMI_ID_ADDR, tmp_u32);
-	//	tmp_u32 = direct_read(PMI_CON0_ADDR);
-	//	printf("PMI_CON0\t%08X\t:%08X\n", PMI_CON0_ADDR, tmp_u32);
-	//	tmp_u32 = direct_read(PMI_CON1_ADDR);
-	//	printf("PMI_CON1\t%08X\t:%08X\n", PMI_CON1_ADDR, tmp_u32);
-	//	tmp_u32 = direct_read(PMI_CON2_ADDR);
-	//	printf("PMI_CON2\t%08X\t:%08X\n", PMI_CON2_ADDR, tmp_u32);
-	//	tmp_u32 = direct_read(PMI_STR_ADDR);
-	//	printf("PMI_STR\t%08X\t:%08X\n", PMI_STR_ADDR, tmp_u32);
-	//
-	//	tmp_u32 = direct_read(DMI_ID_ADDR);
-	//	printf("DMI_ID\t%08X\t:%08X\n", DMI_ID_ADDR, tmp_u32);
-	//	tmp_u32 = direct_read(DMI_CON_ADDR);
-	//	printf("DMI_CON\t%08X\t:%08X\n", DMI_CON_ADDR, tmp_u32);
-	//	tmp_u32 = direct_read(DMI_STR_ADDR);
-	//	printf("DMI_STR\t%08X\t:%08X\n", DMI_STR_ADDR, tmp_u32);
-	//	tmp_u32 = direct_read(DMI_ATR_ADDR);
-	//	printf("DMI_ATR\t%08X\t:%08X\n", DMI_ATR_ADDR, tmp_u32);
-	//
-	//	tmp_u32 = _mfcr(FCX_ADDR);
-	//	printf("FCX\t%08X\t:%08X %08X\n", FCX_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
-	//	tmp_u32 = _mfcr(LCX_ADDR);
-	//	printf("LCX\t%08X\t:%08X %08X\n", LCX_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
-	//	tmp_u32 = _mfcr(PCXI_ADDR);
-	//	printf("PCXI\t%08X\t:%08X %08X\n", PCXI_ADDR, tmp_u32, portCSA_TO_ADDRESS(tmp_u32));
+	volatile uint32_t tmp_u32;
+
+	clear_perf_cnt();
 
 	Icache_en(16);
 	Dcache_en(4);
 	dhry_benchmark();
 
+	icnt_delta = _mfcr(ICNT_ADDR)-icnt_delta;
+	ccnt_delta = _mfcr(CCNT_ADDR)-ccnt_delta;
+	m1_delta = _mfcr(M1CNT_ADDR)-m1_delta;
+	m2_delta = _mfcr(M2CNT_ADDR)-m2_delta;
+	m3_delta = _mfcr(M3CNT_ADDR)-m3_delta;
+	printf("Benchmark_Cache=[%08X, %08X, %08X, %08X, %08X]\n",
+			icnt_delta, ccnt_delta, m1_delta, m2_delta, m3_delta);
+
+	clear_perf_cnt();
+
 	Icache_en(0);
 	Dcache_en(0);
 	dhry_benchmark();
+
+	icnt_delta = _mfcr(ICNT_ADDR)-icnt_delta;
+	ccnt_delta = _mfcr(CCNT_ADDR)-ccnt_delta;
+	m1_delta = _mfcr(M1CNT_ADDR)-m1_delta;
+	m2_delta = _mfcr(M2CNT_ADDR)-m2_delta;
+	m3_delta = _mfcr(M3CNT_ADDR)-m3_delta;
+	printf("Benchmark_None_Cache=[%08X, %08X, %08X, %08X, %08X]\n",
+			icnt_delta, ccnt_delta, m1_delta, m2_delta, m3_delta);
+
+	clear_perf_cnt();
+
+	//Test difference betwenn Flash function and SPRAM function
+	uint32_t tmp_ret = test_func_flash();
+
+	icnt_delta = _mfcr(ICNT_ADDR)-icnt_delta;
+	ccnt_delta = _mfcr(CCNT_ADDR)-ccnt_delta;
+	m1_delta = _mfcr(M1CNT_ADDR)-m1_delta;
+	m2_delta = _mfcr(M2CNT_ADDR)-m2_delta;
+	m3_delta = _mfcr(M3CNT_ADDR)-m3_delta;
+	printf("Function_Flash=[%08X, %08X, %08X, %08X, %08X]\n",
+			icnt_delta, ccnt_delta, m1_delta, m2_delta, m3_delta);
+
+	clear_perf_cnt();
+
+	tmp_ret = test_func_spram();
+
+	icnt_delta = _mfcr(ICNT_ADDR)-icnt_delta;
+	ccnt_delta = _mfcr(CCNT_ADDR)-ccnt_delta;
+	m1_delta = _mfcr(M1CNT_ADDR)-m1_delta;
+	m2_delta = _mfcr(M2CNT_ADDR)-m2_delta;
+	m3_delta = _mfcr(M3CNT_ADDR)-m3_delta;
+	printf("Function_SPRAM=[%08X, %08X, %08X, %08X, %08X]\n",
+			icnt_delta, ccnt_delta, m1_delta, m2_delta, m3_delta);
 
 	no_rtos_loop();
 
